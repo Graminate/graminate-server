@@ -8,6 +8,7 @@ import { ContractsModule } from './contracts/contracts.module';
 import { LabourModule } from './labour/labour.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { PasswordModule } from './password/password.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PasswordModule } from './password/password.module';
     OtpModule,
     ContractsModule,
     LabourModule,
+    InventoryModule,
     ReceiptsModule,
     PasswordModule,
   ],
