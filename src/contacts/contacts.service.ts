@@ -51,17 +51,25 @@ export class ContactsService {
       !last_name ||
       !email ||
       !phone_number ||
-      !type ||
-      !address
+      !type
     ) {
-      return { status: 400, data: { error: 'All fields are required' } };
+      return { status: 400, data: { error: 'Missing required fields' } };
     }
 
     try {
       const result = await pool.query(
-        `INSERT INTO contacts (user_id, first_name, last_name, email, phone_number, type, address) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [user_id, first_name, last_name, email, phone_number, type, address],
+        `INSERT INTO contacts (
+        user_id, first_name, last_name, email, phone_number, type, address
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [
+          user_id,
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          type,
+          address || null,
+        ],
       );
 
       return {
