@@ -44,4 +44,9 @@ export class CompaniesController {
     const result = await this.companiesService.updateCompany(body);
     return res.status(result.status).json(result.data);
   }
+
+  @Post('reset')
+  async reset(@Body('userId') userId: number) {
+    return this.companiesService.resetTable(userId);
+  }
 }

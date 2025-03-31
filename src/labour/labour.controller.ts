@@ -38,4 +38,9 @@ export class LabourController {
     const result = await this.labourService.updateLabour(body);
     return res.status(result.status).json(result.data);
   }
+
+  @Post('reset')
+  async reset(@Body('userId') userId: number) {
+    return this.labourService.resetTable(userId);
+  }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 
 @Injectable()
@@ -181,6 +181,15 @@ export class LabourService {
     } catch (error) {
       console.error('Error updating labour:', error);
       return { status: 500, data: { error: 'Internal Server Error' } };
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE labours RESTART IDENTITY CASCADE');
+      return { message: `Labours table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

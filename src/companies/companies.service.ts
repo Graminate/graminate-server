@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 
 @Injectable()
@@ -160,6 +160,15 @@ export class CompaniesService {
     } catch (err) {
       console.error('Error updating company:', err);
       return { status: 500, data: { error: 'Failed to update company' } };
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE companies RESTART IDENTITY CASCADE');
+      return { message: `Companies table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

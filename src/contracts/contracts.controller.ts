@@ -38,4 +38,8 @@ export class ContractsController {
     const result = await this.contractsService.updateContract(body);
     return res.status(result.status).json(result.data);
   }
+  @Post('reset')
+  async reset(@Body('userId') userId: number) {
+    return this.contractsService.resetTable(userId);
+  }
 }

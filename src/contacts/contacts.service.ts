@@ -1,5 +1,4 @@
-// src/contacts/contacts.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 
 @Injectable()
@@ -158,6 +157,15 @@ export class ContactsService {
     } catch (err) {
       console.error('Error updating contact:', err);
       return { status: 500, data: { error: 'Failed to update contact' } };
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE contacts RESTART IDENTITY CASCADE');
+      return { message: `Contacts table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

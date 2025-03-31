@@ -42,7 +42,7 @@ export class InventoryController {
     return updatedItem;
   }
 
-  // DELETE: http://localhost:3000/api/inventory/delete/:id
+  // DELETE: http://localhost:3001/api/inventory/delete/:id
   @Delete('delete/:id')
   async deleteInventory(@Param('id') id: string) {
     const deleted = await this.inventoryService.delete(Number(id));
@@ -50,5 +50,11 @@ export class InventoryController {
       throw new HttpException('Inventory item not found', HttpStatus.NOT_FOUND);
     }
     return { message: 'Deleted successfully' };
+  }
+
+  // POST: http://localhost:3001/api/inventory/reset
+  @Post('reset')
+  async resetInventory(@Body('userId') userId: number) {
+    return this.inventoryService.resetTable(userId);
   }
 }

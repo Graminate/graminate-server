@@ -44,4 +44,9 @@ export class ContactsController {
     const result = await this.contactsService.updateContact(body);
     return res.status(result.status).json(result.data);
   }
+
+  @Post('reset')
+  async reset(@Body('userId') userId: number) {
+    return this.contactsService.resetTable(userId);
+  }
 }

@@ -61,4 +61,13 @@ export class InventoryService {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE inventory RESTART IDENTITY CASCADE');
+      return { message: `Inventory table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }

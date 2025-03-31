@@ -34,9 +34,14 @@ export class ReceiptsController {
   }
 
   @Put('update')
-  @Post('update') // allow both PUT and POST
+  @Post('update')
   async updateReceipt(@Body() body: any, @Res() res: Response) {
     const result = await this.receiptsService.updateReceipt(body);
     return res.status(result.status).json(result.data);
+  }
+
+  @Post('reset')
+  async reset(@Body('userId') userId: number) {
+    return this.receiptsService.resetTable(userId);
   }
 }
