@@ -35,7 +35,6 @@ export class LabourService {
       full_name,
       date_of_birth,
       gender,
-      guardian_name,
       address,
       contact_number,
       aadhar_card_number,
@@ -46,7 +45,6 @@ export class LabourService {
       !full_name ||
       !date_of_birth ||
       !gender ||
-      !guardian_name ||
       !address ||
       !contact_number ||
       !aadhar_card_number
@@ -56,17 +54,16 @@ export class LabourService {
 
     try {
       const query = `
-        INSERT INTO labours (user_id, full_name, date_of_birth, gender, guardian_name, address, contact_number, aadhar_card_number, role) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Worker') 
-        RETURNING *;
-      `;
+  INSERT INTO labours (user_id, full_name, date_of_birth, gender, address, contact_number, aadhar_card_number, role) 
+  VALUES ($1, $2, $3, $4, $5, $6, $7, 'Worker') 
+  RETURNING *;
+`;
 
       const values = [
         user_id,
         full_name,
         date_of_birth,
         gender,
-        guardian_name,
         address,
         contact_number,
         aadhar_card_number,
@@ -130,7 +127,6 @@ export class LabourService {
       };
 
       if (body.full_name) push('full_name', body.full_name);
-      if (body.guardian_name) push('guardian_name', body.guardian_name);
       if (body.date_of_birth) {
         const formatted = body.date_of_birth.split('/').reverse().join('-');
         push('date_of_birth', formatted);
@@ -141,7 +137,6 @@ export class LabourService {
       if (body.aadhar_card_number)
         push('aadhar_card_number', body.aadhar_card_number);
       if (body.address) push('address', body.address);
-      if (body.voter_id) push('voter_id', body.voter_id);
       if (body.ration_card) push('ration_card', body.ration_card);
       if (body.pan_card) push('pan_card', body.pan_card);
       if (body.driving_license) push('driving_license', body.driving_license);
