@@ -121,8 +121,8 @@ export class ContractsService {
 
   async resetTable(userId: number): Promise<{ message: string }> {
     try {
-      await pool.query('TRUNCATE invoices RESTART IDENTITY CASCADE');
-      return { message: `Receipts (invoices) table reset for user ${userId}` };
+      await pool.query('TRUNCATE deals RESTART IDENTITY CASCADE');
+      return { message: `Contract (deals) table reset for user ${userId}` };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }

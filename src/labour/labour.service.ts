@@ -54,8 +54,12 @@ export class LabourService {
 
     try {
       const query = `
-  INSERT INTO labours (user_id, full_name, date_of_birth, gender, address, contact_number, aadhar_card_number, role) 
-  VALUES ($1, $2, $3, $4, $5, $6, $7, 'Worker') 
+  INSERT INTO labours (
+    user_id, full_name, date_of_birth, gender, address,
+    contact_number, aadhar_card_number, role,
+    base_salary, bonus, overtime_pay, housing_allowance, travel_allowance, meal_allowance, payment_frequency
+  ) 
+  VALUES ($1,$2,$3,$4,$5,$6,$7,'Worker',$8,$9,$10,$11,$12,$13,$14)
   RETURNING *;
 `;
 
@@ -67,6 +71,13 @@ export class LabourService {
         address,
         contact_number,
         aadhar_card_number,
+        body.base_salary ?? 0.0,
+        body.bonus ?? 0.0,
+        body.overtime_pay ?? 0.0,
+        body.housing_allowance ?? 0.0,
+        body.travel_allowance ?? 0.0,
+        body.meal_allowance ?? 0.0,
+        body.payment_frequency ?? 'Monthly',
       ];
 
       const { rows } = await pool.query(query, values);
@@ -152,6 +163,18 @@ export class LabourService {
       if (body.epfo) push('epfo', body.epfo);
       if (body.esic) push('esic', body.esic);
       if (body.pm_kisan !== undefined) push('pm_kisan', body.pm_kisan);
+      if (body.base_salary !== undefined) push('base_salary', body.base_salary);
+      if (body.bonus !== undefined) push('bonus', body.bonus);
+      if (body.overtime_pay !== undefined)
+        push('overtime_pay', body.overtime_pay);
+      if (body.housing_allowance !== undefined)
+        push('housing_allowance', body.housing_allowance);
+      if (body.travel_allowance !== undefined)
+        push('travel_allowance', body.travel_allowance);
+      if (body.meal_allowance !== undefined)
+        push('meal_allowance', body.meal_allowance);
+      if (body.payment_frequency)
+        push('payment_frequency', body.payment_frequency);
 
       if (updateFields.length === 0) {
         return { status: 400, data: { error: 'No fields provided to update' } };
