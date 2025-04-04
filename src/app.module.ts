@@ -9,6 +9,7 @@ import { LabourModule } from './labour/labour.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { PasswordModule } from './password/password.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { LabourPaymentModule } from './labour_payment/labour_payment.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { InventoryModule } from './inventory/inventory.module';
     ContractsModule,
     LabourModule,
     InventoryModule,
+    LabourPaymentModule,
     ReceiptsModule,
     PasswordModule,
   ],
