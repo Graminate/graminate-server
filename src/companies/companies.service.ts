@@ -37,8 +37,12 @@ export class CompaniesService {
       owner_name,
       email,
       phone_number,
-      address,
       type,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
     } = body;
 
     if (
@@ -47,7 +51,10 @@ export class CompaniesService {
       !owner_name ||
       !email ||
       !phone_number ||
-      !address ||
+      !address_line_1 ||
+      !city ||
+      !state ||
+      !postal_code ||
       !type
     ) {
       return { status: 400, data: { error: 'All fields are required' } };
@@ -55,9 +62,24 @@ export class CompaniesService {
 
     try {
       const result = await pool.query(
-        `INSERT INTO companies (user_id, company_name, owner_name, email, phone_number, address, type) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [user_id, company_name, owner_name, email, phone_number, address, type],
+        `INSERT INTO companies (
+    user_id, company_name, owner_name, email, phone_number, type,
+    address_line_1, address_line_2, city, state, postal_code
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+  RETURNING *`,
+        [
+          user_id,
+          company_name,
+          owner_name,
+          email,
+          phone_number,
+          type,
+          address_line_1,
+          address_line_2,
+          city,
+          state,
+          postal_code,
+        ],
       );
 
       return {
@@ -107,8 +129,19 @@ export class CompaniesService {
   }
 
   async updateCompany(body: any) {
-    const { id, company_name, owner_name, email, phone_number, address, type } =
-      body;
+    const {
+      id,
+      company_name,
+      owner_name,
+      email,
+      phone_number,
+      type,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
+    } = body;
 
     if (!id) {
       return { status: 400, data: { error: 'Company ID is required' } };
@@ -131,21 +164,29 @@ export class CompaniesService {
 
       const result = await pool.query(
         `UPDATE companies 
-         SET company_name = COALESCE($1, company_name),
-             owner_name = COALESCE($2, owner_name),
-             email = COALESCE($3, email),
-             phone_number = COALESCE($4, phone_number),
-             address = COALESCE($5, address),
-             type = COALESCE($6, type)
-         WHERE company_id = $7
-         RETURNING *`,
+   SET company_name = COALESCE($1, company_name),
+       owner_name = COALESCE($2, owner_name),
+       email = COALESCE($3, email),
+       phone_number = COALESCE($4, phone_number),
+       type = COALESCE($5, type),
+       address_line_1 = COALESCE($6, address_line_1),
+       address_line_2 = COALESCE($7, address_line_2),
+       city = COALESCE($8, city),
+       state = COALESCE($9, state),
+       postal_code = COALESCE($10, postal_code)
+   WHERE company_id = $11
+   RETURNING *`,
         [
           company_name,
           owner_name,
           email,
           phone_number,
-          address,
           type,
+          address_line_1,
+          address_line_2 || null,
+          city,
+          state,
+          postal_code,
           parsedId,
         ],
       );

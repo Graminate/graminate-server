@@ -7,9 +7,12 @@ import {
   Param,
   Body,
   Res,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { Response } from 'express';
+import { CreateCompanyDto } from './companies.dto';
 
 @Controller('api/companies')
 export class CompaniesController {
@@ -28,7 +31,8 @@ export class CompaniesController {
   }
 
   @Post('add')
-  async addCompany(@Body() body: any, @Res() res: Response) {
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async addCompany(@Body() body: CreateCompanyDto, @Res() res: Response) {
     const result = await this.companiesService.addCompany(body);
     return res.status(result.status).json(result.data);
   }
@@ -40,6 +44,7 @@ export class CompaniesController {
   }
 
   @Put('update')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   async updateCompany(@Body() body: any, @Res() res: Response) {
     const result = await this.companiesService.updateCompany(body);
     return res.status(result.status).json(result.data);

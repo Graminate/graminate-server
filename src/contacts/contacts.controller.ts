@@ -7,7 +7,10 @@ import {
   Param,
   Body,
   Res,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+import { CreateContactDto } from './contacts.dto';
 import { ContactsService } from './contacts.service';
 import { Response } from 'express';
 
@@ -28,7 +31,8 @@ export class ContactsController {
   }
 
   @Post('add')
-  async addContact(@Body() body: any, @Res() res: Response) {
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async addContact(@Body() body: CreateContactDto, @Res() res: Response) {
     const result = await this.contactsService.addContact(body);
     return res.status(result.status).json(result.data);
   }
