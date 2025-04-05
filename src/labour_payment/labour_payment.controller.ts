@@ -32,13 +32,4 @@ export class LabourPaymentController {
     const result = await this.labourPaymentService.updatePayment(body);
     return res.status(result.status).json(result.data);
   }
-
-  @Delete('delete/:paymentId')
-  async deletePayment(
-    @Param('paymentId') paymentId: string,
-    @Res() res: Response,
-  ) {
-    const result = await this.labourPaymentService.deletePayment(paymentId);
-    return res.status(result.status).json(result.data);
-  }
 }

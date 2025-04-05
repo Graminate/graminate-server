@@ -33,7 +33,7 @@ export class LabourPaymentService {
     const {
       labour_id,
       payment_date,
-      base_salary,
+      salary_paid,
       bonus,
       overtime_pay,
       housing_allowance,
@@ -45,7 +45,7 @@ export class LabourPaymentService {
     if (
       !labour_id ||
       !payment_date ||
-      base_salary === undefined ||
+      salary_paid === undefined ||
       bonus === undefined ||
       overtime_pay === undefined ||
       housing_allowance === undefined ||
@@ -57,7 +57,7 @@ export class LabourPaymentService {
 
     try {
       const total_amount =
-        Number(base_salary) +
+        Number(salary_paid) +
         Number(bonus) +
         Number(overtime_pay) +
         Number(housing_allowance) +
@@ -65,7 +65,7 @@ export class LabourPaymentService {
         Number(meal_allowance);
       const query = `
         INSERT INTO labour_payments (
-          labour_id, payment_date, base_salary, bonus, overtime_pay, housing_allowance, travel_allowance, meal_allowance, total_amount, payment_status
+          labour_id, payment_date, salary_paid, bonus, overtime_pay, housing_allowance, travel_allowance, meal_allowance, total_amount, payment_status
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *;
@@ -73,7 +73,7 @@ export class LabourPaymentService {
       const values = [
         labour_id,
         payment_date,
-        base_salary,
+        salary_paid,
         bonus,
         overtime_pay,
         housing_allowance,
@@ -111,7 +111,7 @@ export class LabourPaymentService {
       };
 
       if (body.payment_date) push('payment_date', body.payment_date);
-      if (body.base_salary !== undefined) push('base_salary', body.base_salary);
+      if (body.salary_paid !== undefined) push('salary_paid', body.salary_paid);
       if (body.bonus !== undefined) push('bonus', body.bonus);
       if (body.overtime_pay !== undefined)
         push('overtime_pay', body.overtime_pay);
@@ -127,7 +127,6 @@ export class LabourPaymentService {
         return { status: 400, data: { error: 'No fields provided to update' } };
       }
 
-      // Recalculate total_amount if any salary components are updated.
       const existing = await pool.query(
         'SELECT * FROM labour_payments WHERE payment_id = $1',
         [payment_id],
@@ -137,9 +136,9 @@ export class LabourPaymentService {
       }
       const currentPayment = existing.rows[0];
       const newBaseSalary =
-        body.base_salary !== undefined
-          ? body.base_salary
-          : currentPayment.base_salary;
+        body.salary_paid !== undefined
+          ? body.salary_paid
+          : currentPayment.salary_paid;
       const newBonus =
         body.bonus !== undefined ? body.bonus : currentPayment.bonus;
       const newOvertime =
@@ -186,32 +185,6 @@ export class LabourPaymentService {
       };
     } catch (error) {
       console.error('Error updating payment:', error);
-      return { status: 500, data: { error: 'Internal Server Error' } };
-    }
-  }
-
-  async deletePayment(paymentId: string) {
-    if (!paymentId) {
-      return { status: 400, data: { error: 'Missing paymentId' } };
-    }
-
-    try {
-      const result = await pool.query(
-        `DELETE FROM labour_payments WHERE payment_id = $1 RETURNING *;`,
-        [paymentId],
-      );
-      if (result.rowCount === 0) {
-        return { status: 404, data: { error: 'Payment record not found' } };
-      }
-      return {
-        status: 200,
-        data: {
-          message: 'Payment deleted successfully',
-          deletedPayment: result.rows[0],
-        },
-      };
-    } catch (error) {
-      console.error('Error deleting payment:', error);
       return { status: 500, data: { error: 'Internal Server Error' } };
     }
   }
