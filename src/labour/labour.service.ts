@@ -35,7 +35,11 @@ export class LabourService {
       full_name,
       date_of_birth,
       gender,
-      address,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
       contact_number,
       aadhar_card_number,
     } = body;
@@ -45,7 +49,10 @@ export class LabourService {
       !full_name ||
       !date_of_birth ||
       !gender ||
-      !address ||
+      !address_line_1 ||
+      !city ||
+      !state ||
+      !postal_code ||
       !contact_number ||
       !aadhar_card_number
     ) {
@@ -55,11 +62,12 @@ export class LabourService {
     try {
       const query = `
   INSERT INTO labours (
-    user_id, full_name, date_of_birth, gender, address,
+    user_id, full_name, date_of_birth, gender,
+    address_line_1, address_line_2, city, state, postal_code,
     contact_number, aadhar_card_number, role,
     base_salary, bonus, overtime_pay, housing_allowance, travel_allowance, meal_allowance, payment_frequency
   ) 
-  VALUES ($1,$2,$3,$4,$5,$6,$7,'Worker',$8,$9,$10,$11,$12,$13,$14)
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
   RETURNING *;
 `;
 
@@ -68,9 +76,14 @@ export class LabourService {
         full_name,
         date_of_birth,
         gender,
-        address,
+        address_line_1,
+        address_line_2,
+        city,
+        state,
+        postal_code,
         contact_number,
         aadhar_card_number,
+        body.role,
         body.base_salary ?? 0.0,
         body.bonus ?? 0.0,
         body.overtime_pay ?? 0.0,
@@ -147,7 +160,11 @@ export class LabourService {
       if (body.contact_number) push('contact_number', body.contact_number);
       if (body.aadhar_card_number)
         push('aadhar_card_number', body.aadhar_card_number);
-      if (body.address) push('address', body.address);
+      if (body.address_line_1) push('address_line_1', body.address_line_1);
+      if (body.address_line_2) push('address_line_2', body.address_line_2);
+      if (body.city) push('city', body.city);
+      if (body.state) push('state', body.state);
+      if (body.postal_code) push('postal_code', body.postal_code);
       if (body.ration_card) push('ration_card', body.ration_card);
       if (body.pan_card) push('pan_card', body.pan_card);
       if (body.driving_license) push('driving_license', body.driving_license);
