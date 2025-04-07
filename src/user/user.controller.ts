@@ -32,6 +32,13 @@ export class UserController {
     return res.status(result.status).json(result.data);
   }
 
+  // http://localhost:3001/api/user/type/:id
+  @Get('type/:id')
+  async getUserType(@Param('id') id: string, @Res() res: Response) {
+    const result = await this.userService.getUserTypeById(id);
+    return res.status(result.status).json(result.data);
+  }
+
   @Put(':id')
   async updateUser(
     @Param('id') id: string,

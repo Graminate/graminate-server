@@ -50,6 +50,7 @@ export class UserService {
             imageUrl: user.image_url || null,
             language: user.language || 'English',
             time_format: user.time_format || '24-hour',
+            type: user.type,
           },
         },
       };
@@ -60,15 +61,62 @@ export class UserService {
   }
 
   async updateUser(id: string, body: any) {
-    const { first_name, last_name, phone_number, language, time_format } = body;
+    const { first_name, last_name, phone_number, language, time_format, type, business_name } = body;
 
     try {
-      await pool.query(
-        `UPDATE users 
-         SET first_name = $1, last_name = $2, phone_number = $3, language = $4, time_format = $5 
-         WHERE user_id = $6`,
-        [first_name, last_name, phone_number, language, time_format, id],
+      const existing = await pool.query(
+        'SELECT * FROM users WHERE user_id = $1',
+        [id],
       );
+      if (existing.rows.length === 0) {
+        return { status: 404, data: { error: 'User not found' } };
+      }
+
+      const updateFields: string[] = [];
+      const values: any[] = [];
+
+      if (first_name !== undefined) {
+        updateFields.push(`first_name = $${values.length + 1}`);
+        values.push(first_name);
+      }
+      if (last_name !== undefined) {
+        updateFields.push(`last_name = $${values.length + 1}`);
+        values.push(last_name);
+      }
+      if (phone_number !== undefined) {
+        updateFields.push(`phone_number = $${values.length + 1}`);
+        values.push(phone_number);
+      }
+      if (language !== undefined) {
+        updateFields.push(`language = $${values.length + 1}`);
+        values.push(language);
+      }
+      if (time_format !== undefined) {
+        updateFields.push(`time_format = $${values.length + 1}`);
+        values.push(time_format);
+      }
+      if (type !== undefined) {
+        updateFields.push(`type = $${values.length + 1}`);
+        values.push(type);
+      }
+      if (business_name !== undefined) {
+        updateFields.push(`business_name = $${values.length + 1}`);
+        values.push(business_name);
+      }
+
+      if (updateFields.length === 0) {
+        return { status: 400, data: { error: 'No fields to update' } };
+      }
+
+      const updateQuery = `
+      UPDATE users
+      SET ${updateFields.join(', ')}
+      WHERE user_id = $${values.length + 1}
+    `;
+
+      values.push(id);
+
+      await pool.query(updateQuery, values);
 
       return { status: 200, data: { message: 'User updated successfully' } };
     } catch (err) {
@@ -186,6 +234,7 @@ export class UserService {
       business_name,
       date_of_birth,
       password,
+      type,
     } = body;
 
     if (!first_name || !last_name || !email || !phone_number || !password) {
@@ -214,9 +263,9 @@ export class UserService {
       });
 
       const result = await pool.query(
-        `INSERT INTO users (first_name, last_name, email, phone_number, business_name, date_of_birth, password)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING user_id, first_name, last_name, email, phone_number, business_name`,
+        `INSERT INTO users (first_name, last_name, email, phone_number, business_name, date_of_birth, password, type)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+   RETURNING user_id, first_name, last_name, email, phone_number, business_name, type`,
         [
           first_name,
           last_name,
@@ -225,6 +274,7 @@ export class UserService {
           business_name,
           date_of_birth,
           hashedPassword,
+          type,
         ],
       );
 
@@ -270,6 +320,27 @@ export class UserService {
     } catch (err) {
       console.error('Error deleting user:', err);
       return { status: 500, data: { error: 'Failed to delete user' } };
+    }
+  }
+
+  async getUserTypeById(id: string) {
+    try {
+      const result = await pool.query(
+        'SELECT type FROM users WHERE user_id = $1',
+        [id],
+      );
+
+      if (result.rows.length === 0) {
+        return { status: 404, data: { error: 'User not found' } };
+      }
+
+      return {
+        status: 200,
+        data: { type: result.rows[0].type },
+      };
+    } catch (err) {
+      console.error('Error fetching user type:', err);
+      return { status: 500, data: { error: 'Failed to fetch user type' } };
     }
   }
 }
