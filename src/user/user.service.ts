@@ -61,7 +61,15 @@ export class UserService {
   }
 
   async updateUser(id: string, body: any) {
-    const { first_name, last_name, phone_number, language, time_format, type, business_name } = body;
+    const {
+      first_name,
+      last_name,
+      phone_number,
+      language,
+      time_format,
+      type,
+      business_name,
+    } = body;
 
     try {
       const existing = await pool.query(
@@ -141,7 +149,7 @@ export class UserService {
       ]);
 
       if (result.rows.length === 0) {
-        return { status: 401, data: { error: 'Invalid email or password.' } };
+        return { status: 401, data: { error: 'User does not exist' } };
       }
 
       const user = result.rows[0];
