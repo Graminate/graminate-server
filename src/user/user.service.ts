@@ -51,6 +51,11 @@ export class UserService {
             language: user.language || 'English',
             time_format: user.time_format || '24-hour',
             type: user.type,
+            sub_type: Array.isArray(user.sub_type)
+              ? user.sub_type
+              : typeof user.sub_type === 'string'
+                ? user.sub_type.replace(/[{}"]/g, '').split(',').filter(Boolean)
+                : [],
           },
         },
       };
@@ -69,6 +74,7 @@ export class UserService {
       time_format,
       type,
       business_name,
+      sub_type,
     } = body;
 
     try {
@@ -110,6 +116,17 @@ export class UserService {
       if (business_name !== undefined) {
         updateFields.push(`business_name = $${values.length + 1}`);
         values.push(business_name);
+      }
+
+      // Add all subTypes to be added to Producer
+      if (sub_type !== undefined) {
+        const validSubTypes = ['Fishery', 'Poultry', 'Animal Husbandry'];
+        const filteredSubTypes = Array.isArray(sub_type)
+          ? sub_type.filter((t) => validSubTypes.includes(t))
+          : [];
+
+        updateFields.push(`sub_type = $${values.length + 1}`);
+        values.push(filteredSubTypes); // Postgres will accept text[] directly if passed as array
       }
 
       if (updateFields.length === 0) {
