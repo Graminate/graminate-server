@@ -10,6 +10,7 @@ import { ReceiptsModule } from './receipts/receipts.module';
 import { PasswordModule } from './password/password.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { LabourPaymentModule } from './labour_payment/labour_payment.module';
+import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { LabourPaymentModule } from './labour_payment/labour_payment.module';
     LabourPaymentModule,
     ReceiptsModule,
     PasswordModule,
+    PoultryHealthModule,
   ],
 })
 export class AppModule {}
