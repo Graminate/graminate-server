@@ -38,4 +38,10 @@ export class PoultryHealthController {
     );
     return { health: record };
   }
+
+  @Post('reset')
+  async resetPoultryHealth() {
+    await this.poultryHealthService.resetHealthRecords();
+    return { message: 'Poultry health table reset successfully' };
+  }
 }

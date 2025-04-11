@@ -116,4 +116,15 @@ export class PoultryHealthService {
       throw new InternalServerErrorException('Error updating health record');
     }
   }
+
+  // Reset poultry_health table
+  async resetHealthRecords(): Promise<void> {
+    try {
+      await pool.query(`TRUNCATE poultry_health RESTART IDENTITY CASCADE`);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to reset poultry health records',
+      );
+    }
+  }
 }
