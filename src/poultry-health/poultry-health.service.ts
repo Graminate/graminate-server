@@ -26,6 +26,7 @@ export class PoultryHealthService {
       purpose,
       birds_in,
       birds_died,
+      mortality_rate,
       vaccines,
       deworming,
       symptoms,
@@ -37,11 +38,11 @@ export class PoultryHealthService {
     try {
       const res = await pool.query(
         `INSERT INTO poultry_health (
-          user_id, date, veterinary_name, bird_type, purpose,
-          birds_in, birds_died, vaccines, deworming, symptoms,
-          medications, actions_taken, remarks
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-        RETURNING *`,
+    user_id, date, veterinary_name, bird_type, purpose,
+    birds_in, birds_died, mortality_rate, vaccines, deworming,
+    symptoms, medications, actions_taken, remarks
+  ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+  RETURNING *`,
         [
           user_id,
           date,
@@ -50,6 +51,7 @@ export class PoultryHealthService {
           purpose,
           birds_in,
           birds_died,
+          mortality_rate,
           vaccines,
           deworming,
           symptoms,
