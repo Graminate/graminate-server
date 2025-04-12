@@ -7,7 +7,6 @@ import {
   Param,
   Req,
   Res,
-  HttpStatus,
   UnauthorizedException,
   Delete,
 } from '@nestjs/common';
@@ -84,6 +83,21 @@ export class UserController {
     if (!isAuthorized) throw new UnauthorizedException('Unauthorized');
 
     const result = await this.userService.deleteUser(id, sessionId, res);
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('verify-password/:id')
+  async verifyPassword(
+    @Param('id') id: string,
+    @Body('password') password: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const sessionId = req.cookies?.sid;
+    const isAuthorized = await this.userService.validateSession(sessionId, id);
+    if (!isAuthorized) throw new UnauthorizedException('Unauthorized');
+
+    const result = await this.userService.verifyPassword(id, password);
     return res.status(result.status).json(result.data);
   }
 }

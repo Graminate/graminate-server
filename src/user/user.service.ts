@@ -368,4 +368,28 @@ export class UserService {
       return { status: 500, data: { error: 'Failed to fetch user type' } };
     }
   }
+
+  // Password verification API endpoint:
+  async verifyPassword(userId: string, password: string) {
+    try {
+      const result = await pool.query(
+        'SELECT password FROM users WHERE user_id = $1',
+        [userId],
+      );
+      if (result.rows.length === 0) {
+        return { status: 404, data: { error: 'User not found' } };
+      }
+
+      const user = result.rows[0];
+      const isValid = await argon2.verify(user.password, password);
+
+      return {
+        status: isValid ? 200 : 401,
+        data: { valid: isValid },
+      };
+    } catch (err) {
+      console.error('Error verifying password:', err);
+      return { status: 500, data: { error: 'Failed to verify password' } };
+    }
+  }
 }
