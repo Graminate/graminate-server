@@ -1,20 +1,30 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
+import { CreateContractDto, UpdateContractDto } from './contracts.dto';
 
 @Injectable()
 export class ContractsService {
-  async getContracts(userId: string) {
-    try {
-      const parsedId = parseInt(userId, 10);
-      if (isNaN(parsedId)) {
-        return { status: 400, data: { error: 'Invalid userId parameter' } };
+  async getContracts(userId?: number, page?: number, limit?: number) {
+    let query = 'SELECT * FROM deals';
+    const params: any[] = [];
+
+    if (userId !== undefined) {
+      if (isNaN(userId) || userId <= 0) {
+        return { status: 400, data: { error: 'Invalid User ID parameter' } };
       }
+      query += ' WHERE user_id = $1';
+      params.push(userId);
+    }
 
-      const result = await pool.query(
-        `SELECT * FROM deals WHERE user_id = $1 ORDER BY start_date DESC`,
-        [parsedId],
-      );
+    query += ' ORDER BY start_date DESC';
 
+    if (limit && page) {
+      const offset = (page - 1) * limit;
+      query += ` LIMIT ${limit} OFFSET ${offset}`;
+    }
+
+    try {
+      const result = await pool.query(query, params);
       return { status: 200, data: { contracts: result.rows } };
     } catch (err) {
       console.error('Error fetching contracts:', err);
@@ -22,15 +32,23 @@ export class ContractsService {
     }
   }
 
-  async addContract(body: any) {
+  async addContract(createContractDto: CreateContractDto) {
     const { user_id, deal_name, partner, amount, stage, start_date, end_date } =
-      body;
+      createContractDto;
 
     try {
       const result = await pool.query(
         `INSERT INTO deals (user_id, deal_name, partner, amount, stage, start_date, end_date) 
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [user_id, deal_name, partner, amount, stage, start_date, end_date],
+        [
+          user_id,
+          deal_name,
+          partner,
+          amount,
+          stage,
+          start_date,
+          end_date || null,
+        ],
       );
 
       return {
@@ -41,21 +59,19 @@ export class ContractsService {
         },
       };
     } catch (err) {
-      console.error('Error adding contract:', err);
       return { status: 500, data: { error: 'Failed to add contract' } };
     }
   }
 
-  async deleteContract(id: string) {
-    const parsedId = parseInt(id, 10);
-    if (isNaN(parsedId)) {
-      return { status: 400, data: { error: 'Invalid deal ID' } };
+  async deleteContract(id: number) {
+    if (isNaN(id) || id <= 0) {
+      return { status: 400, data: { error: 'Invalid contract (deal) ID' } };
     }
 
     try {
       const result = await pool.query(
         'DELETE FROM deals WHERE deal_id = $1 RETURNING *',
-        [parsedId],
+        [id],
       );
 
       if (result.rows.length === 0) {
@@ -75,36 +91,79 @@ export class ContractsService {
     }
   }
 
-  async updateContract(body: any) {
+  async updateContract(updateContractDto: UpdateContractDto) {
     const { id, deal_name, partner, amount, stage, start_date, end_date } =
-      body;
-    const parsedId = parseInt(id, 10);
+      updateContractDto;
 
-    if (!id || isNaN(parsedId)) {
-      return { status: 400, data: { error: 'Invalid contract ID' } };
+    if (isNaN(id) || id <= 0) {
+      return { status: 400, data: { error: 'Invalid contract (deal) ID' } };
+    }
+
+    const updateFields = [
+      deal_name,
+      partner,
+      amount,
+      stage,
+      start_date,
+      end_date,
+    ];
+    if (updateFields.every((field) => field === undefined)) {
+      return { status: 400, data: { error: 'No update data provided' } };
     }
 
     try {
       const existing = await pool.query(
-        'SELECT * FROM deals WHERE deal_id = $1',
-        [parsedId],
+        'SELECT deal_id FROM deals WHERE deal_id = $1',
+        [id],
       );
       if (existing.rows.length === 0) {
         return { status: 404, data: { error: 'Contract not found' } };
       }
 
-      const result = await pool.query(
-        `UPDATE deals 
-         SET deal_name = COALESCE($1, deal_name),
-             partner = COALESCE($2, partner),
-             amount = COALESCE($3, amount),
-             stage = COALESCE($4, stage),
-             start_date = COALESCE($5, start_date),
-             end_date = COALESCE($6, end_date)
-         WHERE deal_id = $7
-         RETURNING *`,
-        [deal_name, partner, amount, stage, start_date, end_date, parsedId],
-      );
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      let valueIndex = 1;
+
+      if (deal_name !== undefined) {
+        setClauses.push(`deal_name = $${valueIndex++}`);
+        values.push(deal_name);
+      }
+      if (partner !== undefined) {
+        setClauses.push(`partner = $${valueIndex++}`);
+        values.push(partner);
+      }
+      if (amount !== undefined) {
+        setClauses.push(`amount = $${valueIndex++}`);
+        values.push(amount);
+      }
+      if (stage !== undefined) {
+        setClauses.push(`stage = $${valueIndex++}`);
+        values.push(stage);
+      }
+      if (start_date !== undefined) {
+        setClauses.push(`start_date = $${valueIndex++}`);
+        values.push(start_date);
+      }
+      if (end_date !== undefined) {
+        setClauses.push(`end_date = $${valueIndex++}`);
+        values.push(end_date);
+      }
+
+      if (setClauses.length === 0) {
+        return { status: 400, data: { error: 'No update data provided' } };
+      }
+
+      values.push(id);
+
+      const query = `UPDATE deals SET ${setClauses.join(', ')} WHERE deal_id = $${valueIndex} RETURNING *`;
+      const result = await pool.query(query, values);
+
+      if (!result.rows[0]) {
+        return {
+          status: 404,
+          data: { error: 'Contract not found or failed to update' },
+        };
+      }
 
       return {
         status: 200,
@@ -114,7 +173,6 @@ export class ContractsService {
         },
       };
     } catch (err) {
-      console.error('Error updating contract:', err);
       return { status: 500, data: { error: 'Failed to update contract' } };
     }
   }
@@ -122,9 +180,9 @@ export class ContractsService {
   async resetTable(userId: number): Promise<{ message: string }> {
     try {
       await pool.query('TRUNCATE deals RESTART IDENTITY CASCADE');
-      return { message: `Contract (deals) table reset for user ${userId}` };
+      return { message: `Contracts (deals) table reset initiated by user ${userId}`};
     } catch (error) {
-      throw new InternalServerErrorException(error.message);
+      throw new InternalServerErrorException('Failed to reset contracts table');
     }
   }
 }
