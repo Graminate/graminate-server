@@ -9,6 +9,7 @@ import {
   Res,
   UsePipes,
   ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { Response } from 'express';
@@ -25,8 +26,18 @@ export class CompaniesController {
   }
 
   @Get()
-  async getAllCompanies(@Res() res: Response) {
-    const result = await this.companiesService.getCompanies(); // no ID = all
+  async getAllCompanies(
+    @Res() res: Response,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    const parsedLimit = limit ? parseInt(limit) : undefined;
+    const parsedOffset = offset ? parseInt(offset) : undefined;
+    const result = await this.companiesService.getCompanies(
+      undefined,
+      parsedLimit,
+      parsedOffset,
+    );
     return res.status(result.status).json(result.data);
   }
 
@@ -51,7 +62,12 @@ export class CompaniesController {
   }
 
   @Post('reset')
-  async reset(@Body('userId') userId: number) {
-    return this.companiesService.resetTable(userId);
+  async reset(@Body('userId') userId: number, @Res() res: Response) {
+    try {
+      const result = await this.companiesService.resetTable(userId);
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to reset companies table' });
+    }
   }
 }

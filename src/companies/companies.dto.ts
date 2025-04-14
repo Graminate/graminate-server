@@ -50,6 +50,6 @@ export class CreateCompanyDto {
   state: string;
 
   @IsNotEmpty()
-  @MaxLength(10)
+  @MaxLength(6)
   postal_code: string;
 }
