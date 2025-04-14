@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
-  Body,
-  Res,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, Res } from '@nestjs/common';
 import { LabourPaymentService } from './labour_payment.service';
 import { Response } from 'express';
 

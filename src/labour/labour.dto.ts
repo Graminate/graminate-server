@@ -1,4 +1,3 @@
-// src/labour/labour.dto.ts
 export class CreateOrUpdateLabourDto {
   user_id?: number;
   labour_id?: number;
@@ -28,7 +27,6 @@ export class CreateOrUpdateLabourDto {
   payment_frequency?: string;
   role?: string;
 
-  // New structured address fields
   address_line_1?: string;
   address_line_2?: string;
   city?: string;

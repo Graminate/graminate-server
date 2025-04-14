@@ -6,32 +6,57 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
+import {
+  CreateInventoryDto,
+  UpdateInventoryDto,
+  ResetInventoryDto,
+} from './inventory.dto';
 
 @Controller('api/inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
-  // GET: http://localhost:3001/api/inventory/:userId
+  // GET: http://localhost:3001/api/inventory/:userId?limit=&offset=&item_group=
   @Get(':userId')
-  async getInventory(@Param('userId') userId: string) {
-    const items = await this.inventoryService.findByUserId(Number(userId));
+  async getInventory(
+    @Param('userId') userId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('item_group') itemGroup?: string,
+  ) {
+    let items = await this.inventoryService.findByUserId(Number(userId));
+    // Optional filtering based on item_group.
+    if (itemGroup) {
+      items = items.filter((item) => item.item_group === itemGroup);
+    }
+    // Optional pagination.
+    if (offset) {
+      items = items.slice(Number(offset));
+    }
+    if (limit) {
+      items = items.slice(0, Number(limit));
+    }
     return { items };
   }
 
   // POST: http://localhost:3001/api/inventory/add
   @Post('add')
-  async addInventory(@Body() createDto: any) {
+  async addInventory(@Body() createDto: CreateInventoryDto) {
     const newItem = await this.inventoryService.create(createDto);
     return newItem;
   }
 
   // PUT: http://localhost:3001/api/inventory/update/:id
   @Put('update/:id')
-  async updateInventory(@Param('id') id: string, @Body() updateDto: any) {
+  async updateInventory(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateInventoryDto,
+  ) {
     const updatedItem = await this.inventoryService.update(
       Number(id),
       updateDto,
@@ -54,7 +79,7 @@ export class InventoryController {
 
   // POST: http://localhost:3001/api/inventory/reset
   @Post('reset')
-  async resetInventory(@Body('userId') userId: number) {
-    return this.inventoryService.resetTable(userId);
+  async resetInventory(@Body() resetDto: ResetInventoryDto) {
+    return this.inventoryService.resetTable(resetDto.userId);
   }
 }
