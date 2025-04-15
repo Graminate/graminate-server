@@ -11,6 +11,7 @@ import { PasswordModule } from './password/password.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { LabourPaymentModule } from './labour_payment/labour_payment.module';
 import { PoultryHealthModule } from './poultry-health/poultry-health.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PoultryHealthModule } from './poultry-health/poultry-health.module';
     UserModule,
     OtpModule,
     ContractsModule,
+    TasksModule,
     LabourModule,
     InventoryModule,
     LabourPaymentModule,

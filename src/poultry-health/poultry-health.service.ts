@@ -8,7 +8,7 @@ export class PoultryHealthService {
     try {
       const res = await pool.query(
         `SELECT * FROM poultry_health WHERE user_id = $1 ORDER BY created_at DESC`,
-        [userId],
+        [Number(userId)],
       );
       return res.rows;
     } catch (error) {
