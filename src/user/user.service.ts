@@ -19,6 +19,12 @@ export class UserService {
     if (session.rows.length === 0) return false;
 
     const sess = session.rows[0];
+    const expireDate = new Date(sess.expire);
+    if (expireDate < new Date()) {
+      // Optional: delete expired session
+      await pool.query('DELETE FROM session WHERE sid = $1', [sessionId]);
+      return false;
+    }
 
     const sessionData =
       typeof sess.sess === 'string' ? JSON.parse(sess.sess) : sess.sess;
