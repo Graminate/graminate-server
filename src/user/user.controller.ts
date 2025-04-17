@@ -17,12 +17,6 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // Security: CSRF Token Validation
-  @Get('csrf-token')
-  getCsrf(@Req() req: Request) {
-    return { csrfToken: req.csrfToken() };
-  }
-
   @Get(':id')
   async getUser(
     @Param('id') id: string,
