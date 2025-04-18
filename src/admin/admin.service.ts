@@ -67,7 +67,7 @@ export class AdminService {
   async getAllUsers() {
     try {
       const result = await pool.query(
-        `SELECT user_id, first_name, last_name, email, business_name, type
+        `SELECT user_id, first_name, last_name, email, business_name, type, sub_type
        FROM users
        ORDER BY created_at DESC`,
       );

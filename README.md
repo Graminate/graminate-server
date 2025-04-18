@@ -1,98 +1,77 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Graminate Server
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Main Nest.js Server that powers Graminate's internal services.
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Graminate Server is the central backend component for the **Graminate** ecosystem. Built with the powerful [Nest.js](https://nestjs.com/) framework (Node.js), it serves as the primary interface for database interactions, handles core business logic, and provides APIs consumed by other Graminate services.
 
-## Project setup
+This server ensures a consistent and reliable data layer and business logic foundation for the entire Graminate platform.
 
-```bash
-$ npm install
-```
+## Features
 
-## Compile and run the project
+- **Centralized API:** Provides RESTful API endpoints for Graminate Consulting website (job applications), Graminate ERP, Graminate Admin.
+- **Database Interaction:** Manages connections and operations with the primary database.
+- **Business Logic:** Encapsulates core application logic.
+- **Scalable Architecture:** Leverages Nest.js modules for maintainability and scalability.
+- **TypeScript:** Built with TypeScript for strong typing and improved developer experience.
 
-```bash
-# development
-$ npm run start
+## Technology Stack
 
-# watch mode
-$ npm run start:dev
+- **Framework:** [Nest.js](https://nestjs.com/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Package Manager:** [npm](https://www.npmjs.com/)
+- **Database:** `[PostgreSQL]`
 
-# production mode
-$ npm run start:prod
-```
+## Prerequisites
 
-## Run tests
+Before you begin, ensure you have met the following requirements:
 
-```bash
-# unit tests
-$ npm run test
+- [Node.js](https://nodejs.org/) (LTS version recommended, e.g., >= 18.x)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- A running instance of the Postgresql database.
+- Git
 
-# e2e tests
-$ npm run test:e2e
+## Installation
 
-# test coverage
-$ npm run test:cov
-```
+Follow these steps to get your development environment set up:
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+1.  **Clone the repository:**
 
 ```bash
-$ npm install -g mau
-$ mau deploy
+git clone https://github.com/Graminate/graminate-server.git
+cd graminate-server
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+2.  **Install dependencies:**
 
-## Resources
+```bash
+npm install
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## Configuration
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+This application uses environment variables for configuration.
 
-## Support
+1.  **Create a `.env` file:**
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Copy the content of the environment file to `.env`. Please contact Borneel for this.
 
-## Stay in touch
+## Running the App
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Nest.js provides several ways to run the application:
 
-## License
+```bash
+# Development mode with hot-reloading
+npm  run  start
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Watch mode (similar to dev)
+npm  run  start:watch
+
+# Production mode (requires build step first)
+npm  run  build
+npm  run  start:prod
+
+# Debug mode
+npm  run  start:debug
+```
