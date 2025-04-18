@@ -4,6 +4,12 @@ import * as argon2 from 'argon2';
 
 @Injectable()
 export class UserService {
+  getAllUsersMinimal() {
+      throw new Error('Method not implemented.');
+  }
+  getUserCount() {
+      throw new Error('Method not implemented.');
+  }
   jwtService: any;
 
   async getUserById(id: string) {

@@ -12,6 +12,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { LabourPaymentModule } from './labour_payment/labour_payment.module';
 import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 import { TasksModule } from './tasks/tasks.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TasksModule } from './tasks/tasks.module';
     ReceiptsModule,
     PasswordModule,
     PoultryHealthModule,
+    AdminModule
   ],
 })
 export class AppModule {}
