@@ -8,6 +8,11 @@ import { ContractsModule } from './contracts/contracts.module';
 import { LabourModule } from './labour/labour.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { PasswordModule } from './password/password.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { LabourPaymentModule } from './labour_payment/labour_payment.module';
+import { PoultryHealthModule } from './poultry-health/poultry-health.module';
+import { TasksModule } from './tasks/tasks.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -17,9 +22,14 @@ import { PasswordModule } from './password/password.module';
     UserModule,
     OtpModule,
     ContractsModule,
+    TasksModule,
     LabourModule,
+    InventoryModule,
+    LabourPaymentModule,
     ReceiptsModule,
     PasswordModule,
+    PoultryHealthModule,
+    AdminModule
   ],
 })
 export class AppModule {}

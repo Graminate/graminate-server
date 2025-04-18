@@ -1,74 +1,119 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 
 @Injectable()
 export class CompaniesService {
-  async getCompanies(id?: string) {
+  async getCompanies(id?: string, limit?: number, offset?: number) {
     try {
-      let result;
-
-      if (id) {
-        const parsedUserId = parseInt(id, 10);
-        if (isNaN(parsedUserId)) {
+      let query = '';
+      let params: any[] = [];
+      if (id !== undefined) {
+        if (isNaN(Number(id))) {
           return { status: 400, data: { error: 'Invalid user ID parameter' } };
         }
-
-        result = await pool.query(
-          `SELECT * FROM companies WHERE user_id = $1 ORDER BY created_at DESC`,
-          [parsedUserId],
-        );
+        query =
+          'SELECT * FROM companies WHERE user_id = $1 ORDER BY created_at DESC';
+        params = [Number(id)];
+      } else if (limit !== undefined && offset !== undefined) {
+        query =
+          'SELECT * FROM companies ORDER BY created_at DESC LIMIT $1 OFFSET $2';
+        params = [limit, offset];
       } else {
-        result = await pool.query(
-          `SELECT * FROM companies ORDER BY created_at DESC`,
-        );
+        query = 'SELECT * FROM companies ORDER BY created_at DESC';
+        params = [];
       }
-
+      const result = await pool.query(query, params);
       return { status: 200, data: { companies: result.rows } };
-    } catch (err) {
-      console.error('Error fetching companies:', err);
+    } catch (error) {
+      console.error('Error fetching companies', error);
+      if (error.code === 'RATE_LIMIT' || error.code === 'RATE_LIMIT_EXCEEDED') {
+        return {
+          status: 429,
+          data: { error: 'Too many requests. Please try again later.' },
+        };
+      }
       return { status: 500, data: { error: 'Failed to fetch companies' } };
     }
   }
 
   async addCompany(body: any) {
-    const {
-      user_id,
-      company_name,
-      owner_name,
-      email,
-      phone_number,
-      address,
-      type,
-    } = body;
+    const requiredFields = [
+      'user_id',
+      'company_name',
+      'owner_name',
+      'email',
+      'phone_number',
+      'type',
+      'address_line_1',
+      'city',
+      'state',
+      'postal_code',
+    ];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return { status: 400, data: { error: 'All fields are required' } };
+      }
+    }
 
-    if (
-      !user_id ||
-      !company_name ||
-      !owner_name ||
-      !email ||
-      !phone_number ||
-      !address ||
-      !type
-    ) {
-      return { status: 400, data: { error: 'All fields are required' } };
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    if (!phoneRegex.test(body.phone_number)) {
+      return { status: 400, data: { error: 'Invalid phone number format' } };
+    }
+
+    const postalRegex = /^\d{6}$/;
+    if (!postalRegex.test(body.postal_code)) {
+      return { status: 400, data: { error: 'Invalid postal code format' } };
     }
 
     try {
-      const result = await pool.query(
-        `INSERT INTO companies (user_id, company_name, owner_name, email, phone_number, address, type) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [user_id, company_name, owner_name, email, phone_number, address, type],
+      const duplicateCheck = await pool.query(
+        'SELECT * FROM companies WHERE user_id = $1 AND company_name = $2',
+        [body.user_id, body.company_name],
       );
+      if (duplicateCheck.rows.length > 0) {
+        return {
+          status: 400,
+          data: { error: 'Company with this name already exists' },
+        };
+      }
 
+      const insertResult = await pool.query(
+        'INSERT INTO companies (user_id, company_name, owner_name, email, phone_number, type, address_line_1, address_line_2, city, state, postal_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING company_id',
+        [
+          body.user_id,
+          body.company_name,
+          body.owner_name,
+          body.email,
+          body.phone_number,
+          body.type,
+          body.address_line_1,
+          body.address_line_2 || null,
+          body.city,
+          body.state,
+          body.postal_code,
+        ],
+      );
+      const company = { company_id: insertResult.rows[0].company_id, ...body };
       return {
         status: 201,
-        data: {
-          message: 'Company added successfully',
-          company: result.rows[0],
-        },
+        data: { message: 'Company added successfully', company },
       };
-    } catch (err) {
-      console.error('Error adding company:', err);
+    } catch (error) {
+      console.error('Failed to add company', error);
+      if (error.code === '23505') {
+        return {
+          status: 400,
+          data: { error: 'Company with this name already exists' },
+        };
+      } else if (
+        error.code === 'RATE_LIMIT' ||
+        error.code === 'RATE_LIMIT_EXCEEDED'
+      ) {
+        return {
+          status: 429,
+          data: { error: 'Too many requests. Please try again later.' },
+        };
+      }
       return { status: 500, data: { error: 'Failed to add company' } };
     }
   }
@@ -77,89 +122,94 @@ export class CompaniesService {
     if (!id) {
       return { status: 400, data: { error: 'Company ID is required' } };
     }
-
-    const parsedId = parseInt(id, 10);
-    if (isNaN(parsedId)) {
+    if (isNaN(Number(id))) {
       return { status: 400, data: { error: 'Invalid company ID' } };
     }
 
     try {
-      const result = await pool.query(
-        'DELETE FROM companies WHERE company_id = $1 RETURNING *',
-        [parsedId],
+      const selectResult = await pool.query(
+        'SELECT * FROM companies WHERE company_id = $1',
+        [Number(id)],
       );
-
-      if (result.rows.length === 0) {
+      if (selectResult.rows.length === 0) {
         return { status: 404, data: { error: 'Company not found' } };
       }
-
+      await pool.query('DELETE FROM companies WHERE company_id = $1', [
+        Number(id),
+      ]);
       return {
         status: 200,
         data: {
           message: 'Company deleted successfully',
-          company: result.rows[0],
+          company: { company_id: Number(id) },
         },
       };
-    } catch (err) {
-      console.error('Error deleting company:', err);
+    } catch (error) {
+      console.error('Failed to delete company', error);
       return { status: 500, data: { error: 'Failed to delete company' } };
     }
   }
 
   async updateCompany(body: any) {
-    const { id, company_name, owner_name, email, phone_number, address, type } =
-      body;
-
-    if (!id) {
+    if (!body.id) {
       return { status: 400, data: { error: 'Company ID is required' } };
     }
-
-    const parsedId = parseInt(id, 10);
-    if (isNaN(parsedId)) {
+    if (isNaN(Number(body.id))) {
       return { status: 400, data: { error: 'Invalid company ID' } };
     }
 
     try {
-      const existing = await pool.query(
+      const selectResult = await pool.query(
         'SELECT * FROM companies WHERE company_id = $1',
-        [parsedId],
+        [Number(body.id)],
       );
-
-      if (existing.rows.length === 0) {
+      if (selectResult.rows.length === 0) {
         return { status: 404, data: { error: 'Company not found' } };
       }
 
-      const result = await pool.query(
-        `UPDATE companies 
-         SET company_name = COALESCE($1, company_name),
-             owner_name = COALESCE($2, owner_name),
-             email = COALESCE($3, email),
-             phone_number = COALESCE($4, phone_number),
-             address = COALESCE($5, address),
-             type = COALESCE($6, type)
-         WHERE company_id = $7
-         RETURNING *`,
+      const updateResult = await pool.query(
+        'UPDATE companies SET company_name = $1, owner_name = $2, email = $3, phone_number = $4, type = $5, address_line_1 = $6, address_line_2 = $7, city = $8, state = $9, postal_code = $10 WHERE company_id = $11 RETURNING *',
         [
-          company_name,
-          owner_name,
-          email,
-          phone_number,
-          address,
-          type,
-          parsedId,
+          body.company_name,
+          body.owner_name,
+          body.email,
+          body.phone_number,
+          body.type,
+          body.address_line_1,
+          body.address_line_2 || null,
+          body.city,
+          body.state,
+          body.postal_code,
+          Number(body.id),
         ],
       );
-
+      if (updateResult.rows.length === 0) {
+        return {
+          status: 409,
+          data: { error: 'Conflict: Company was updated by another process' },
+        };
+      }
       return {
         status: 200,
         data: {
           message: 'Company updated successfully',
-          company: result.rows[0],
+          company: updateResult.rows[0],
         },
       };
-    } catch (err) {
-      console.error('Error updating company:', err);
+    } catch (error) {
+      console.error('Failed to update company', error);
       return { status: 500, data: { error: 'Failed to update company' } };
+    }
+  }
+
+  async resetTable(userId: number) {
+    try {
+      console.log(`Resetting companies table for user ${userId}`);
+      await pool.query('TRUNCATE companies RESTART IDENTITY CASCADE');
+      return { message: `Companies table reset for user ${userId}` };
+    } catch (error) {
+      console.error('Failed to reset companies table', error);
+      throw new InternalServerErrorException();
     }
   }
 }

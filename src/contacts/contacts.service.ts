@@ -1,5 +1,4 @@
-// src/contacts/contacts.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 
 @Injectable()
@@ -42,7 +41,11 @@ export class ContactsService {
       email,
       phone_number,
       type,
-      address,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
     } = body;
 
     if (
@@ -52,16 +55,34 @@ export class ContactsService {
       !email ||
       !phone_number ||
       !type ||
-      !address
+      !address_line_1 ||
+      !city ||
+      !state ||
+      !postal_code
     ) {
-      return { status: 400, data: { error: 'All fields are required' } };
+      return { status: 400, data: { error: 'Missing required fields' } };
     }
 
     try {
       const result = await pool.query(
-        `INSERT INTO contacts (user_id, first_name, last_name, email, phone_number, type, address) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [user_id, first_name, last_name, email, phone_number, type, address],
+        `INSERT INTO contacts (
+          user_id, first_name, last_name, email, phone_number, type,
+          address_line_1, address_line_2, city, state, postal_code
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *`,
+        [
+          user_id,
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          type,
+          address_line_1,
+          address_line_2 || null,
+          city,
+          state,
+          postal_code,
+        ],
       );
 
       return {
@@ -108,11 +129,21 @@ export class ContactsService {
   }
 
   async updateContact(body: any) {
-    const { id, first_name, last_name, email, phone_number, address, type } =
-      body;
+    const {
+      id,
+      first_name,
+      last_name,
+      email,
+      phone_number,
+      type,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
+    } = body;
 
     const parsedId = parseInt(id, 10);
-
     if (!id || isNaN(parsedId)) {
       return { status: 400, data: { error: 'Invalid contact ID' } };
     }
@@ -133,11 +164,27 @@ export class ContactsService {
              last_name = COALESCE($2, last_name),
              email = COALESCE($3, email),
              phone_number = COALESCE($4, phone_number),
-             address = COALESCE($5, address),
-             type = COALESCE($6, type)
-         WHERE contact_id = $7
+             type = COALESCE($5, type),
+             address_line_1 = COALESCE($6, address_line_1),
+             address_line_2 = COALESCE($7, address_line_2),
+             city = COALESCE($8, city),
+             state = COALESCE($9, state),
+             postal_code = COALESCE($10, postal_code)
+         WHERE contact_id = $11
          RETURNING *`,
-        [first_name, last_name, email, phone_number, address, type, parsedId],
+        [
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          type,
+          address_line_1,
+          address_line_2 || null,
+          city,
+          state,
+          postal_code,
+          parsedId,
+        ],
       );
 
       return {
@@ -150,6 +197,15 @@ export class ContactsService {
     } catch (err) {
       console.error('Error updating contact:', err);
       return { status: 500, data: { error: 'Failed to update contact' } };
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE contacts RESTART IDENTITY CASCADE');
+      return { message: `Contacts table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

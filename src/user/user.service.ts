@@ -1,30 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import pool from '@/config/database';
 import * as argon2 from 'argon2';
-import { v4 as uuidv4 } from 'uuid';
-import { Response } from 'express';
-import { serialize } from 'cookie';
 
 @Injectable()
 export class UserService {
-  async validateSession(
-    sessionId: string,
-    requestedUserId: string,
-  ): Promise<boolean> {
-    if (!sessionId || !requestedUserId) return false;
-
-    const session = await pool.query('SELECT * FROM session WHERE sid = $1', [
-      sessionId,
-    ]);
-    if (session.rows.length === 0) return false;
-
-    const sess = session.rows[0];
-
-    const sessionData =
-      typeof sess.sess === 'string' ? JSON.parse(sess.sess) : sess.sess;
-
-    return String(sessionData.userId) === String(requestedUserId);
+  getAllUsersMinimal() {
+      throw new Error('Method not implemented.');
   }
+  getUserCount() {
+      throw new Error('Method not implemented.');
+  }
+  jwtService: any;
 
   async getUserById(id: string) {
     try {
@@ -50,6 +36,12 @@ export class UserService {
             imageUrl: user.image_url || null,
             language: user.language || 'English',
             time_format: user.time_format || '24-hour',
+            type: user.type,
+            sub_type: Array.isArray(user.sub_type)
+              ? user.sub_type
+              : typeof user.sub_type === 'string'
+                ? user.sub_type.replace(/[{}"]/g, '').split(',').filter(Boolean)
+                : [],
           },
         },
       };
@@ -60,15 +52,82 @@ export class UserService {
   }
 
   async updateUser(id: string, body: any) {
-    const { first_name, last_name, phone_number, language, time_format } = body;
+    const {
+      first_name,
+      last_name,
+      phone_number,
+      language,
+      time_format,
+      type,
+      business_name,
+      sub_type,
+    } = body;
 
     try {
-      await pool.query(
-        `UPDATE users 
-         SET first_name = $1, last_name = $2, phone_number = $3, language = $4, time_format = $5 
-         WHERE user_id = $6`,
-        [first_name, last_name, phone_number, language, time_format, id],
+      const existing = await pool.query(
+        'SELECT * FROM users WHERE user_id = $1',
+        [id],
       );
+      if (existing.rows.length === 0) {
+        return { status: 404, data: { error: 'User not found' } };
+      }
+
+      const updateFields: string[] = [];
+      const values: any[] = [];
+
+      if (first_name !== undefined) {
+        updateFields.push(`first_name = $${values.length + 1}`);
+        values.push(first_name);
+      }
+      if (last_name !== undefined) {
+        updateFields.push(`last_name = $${values.length + 1}`);
+        values.push(last_name);
+      }
+      if (phone_number !== undefined) {
+        updateFields.push(`phone_number = $${values.length + 1}`);
+        values.push(phone_number);
+      }
+      if (language !== undefined) {
+        updateFields.push(`language = $${values.length + 1}`);
+        values.push(language);
+      }
+      if (time_format !== undefined) {
+        updateFields.push(`time_format = $${values.length + 1}`);
+        values.push(time_format);
+      }
+      if (type !== undefined) {
+        updateFields.push(`type = $${values.length + 1}`);
+        values.push(type);
+      }
+      if (business_name !== undefined) {
+        updateFields.push(`business_name = $${values.length + 1}`);
+        values.push(business_name);
+      }
+
+      // Add all subTypes to be added to Producer
+      if (sub_type !== undefined) {
+        const validSubTypes = ['Fishery', 'Poultry', 'Animal Husbandry'];
+        const filteredSubTypes = Array.isArray(sub_type)
+          ? sub_type.filter((t) => validSubTypes.includes(t))
+          : [];
+
+        updateFields.push(`sub_type = $${values.length + 1}`);
+        values.push(filteredSubTypes); // Postgres will accept text[] directly if passed as array
+      }
+
+      if (updateFields.length === 0) {
+        return { status: 400, data: { error: 'No fields to update' } };
+      }
+
+      const updateQuery = `
+      UPDATE users
+      SET ${updateFields.join(', ')}
+      WHERE user_id = $${values.length + 1}
+    `;
+
+      values.push(id);
+
+      await pool.query(updateQuery, values);
 
       return { status: 200, data: { message: 'User updated successfully' } };
     } catch (err) {
@@ -77,103 +136,42 @@ export class UserService {
     }
   }
 
-  async loginUser(body: any, res: Response) {
-    const { email, password } = body;
+  async login(email: string, password: string) {
+    const user = await this.validateUser(email, password);
+    const payload = { userId: user.user_id };
+    const token = this.jwtService.sign(payload);
 
-    if (!email || !password) {
-      return {
-        status: 400,
-        data: { error: 'Email and password are required.' },
-      };
-    }
-
+    return {
+      access_token: token,
+      user: {
+        user_id: user.user_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        phone_number: user.phone_number,
+        business_name: user.business_name,
+      },
+    };
+  }
+  async validateUser(email: string, password: string) {
     try {
       const result = await pool.query('SELECT * FROM users WHERE email = $1', [
         email,
       ]);
-
       if (result.rows.length === 0) {
-        return { status: 401, data: { error: 'Invalid email or password.' } };
+        throw new Error('Invalid email or password');
       }
 
       const user = result.rows[0];
       const isValid = await argon2.verify(user.password, password);
       if (!isValid) {
-        return { status: 401, data: { error: 'Invalid email or password.' } };
+        throw new Error('Invalid email or password');
       }
 
-      const sessionId = uuidv4();
-      const sessionData = {
-        userId: user.user_id,
-        createdAt: new Date().toISOString(),
-      };
-      const expire = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days
-
-      await pool.query(
-        'INSERT INTO session (sid, sess, expire) VALUES ($1, $2, $3)',
-        [sessionId, JSON.stringify(sessionData), expire],
-      );
-
-      res.setHeader(
-        'Set-Cookie',
-        serialize('sid', sessionId, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 3 * 24 * 60 * 60,
-          path: '/',
-        }),
-      );
-
-      return {
-        status: 200,
-        data: {
-          message: 'Login successful',
-          user: {
-            user_id: user.user_id,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            email: user.email,
-            phone_number: user.phone_number,
-            business_name: user.business_name,
-          },
-        },
-      };
+      return user;
     } catch (err) {
-      console.error('Error during login:', err);
-      return {
-        status: 500,
-        data: { error: 'An internal server error occurred.' },
-      };
-    }
-  }
-
-  async logoutUser(sessionId: string, res: Response) {
-    if (!sessionId) {
-      return { status: 400, data: { error: 'No active session found.' } };
-    }
-
-    try {
-      await pool.query('DELETE FROM session WHERE sid = $1', [sessionId]);
-
-      res.setHeader(
-        'Set-Cookie',
-        serialize('sid', '', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 0,
-          path: '/',
-        }),
-      );
-
-      return { status: 200, data: { message: 'Logout successful.' } };
-    } catch (err) {
-      console.error('Error during logout:', err);
-      return {
-        status: 500,
-        data: { error: 'An internal server error occurred.' },
-      };
+      console.error('Error validating user:', err);
+      throw new Error('Invalid email or password');
     }
   }
 
@@ -186,6 +184,7 @@ export class UserService {
       business_name,
       date_of_birth,
       password,
+      type,
     } = body;
 
     if (!first_name || !last_name || !email || !phone_number || !password) {
@@ -214,9 +213,9 @@ export class UserService {
       });
 
       const result = await pool.query(
-        `INSERT INTO users (first_name, last_name, email, phone_number, business_name, date_of_birth, password)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING user_id, first_name, last_name, email, phone_number, business_name`,
+        `INSERT INTO users (first_name, last_name, email, phone_number, business_name, date_of_birth, password, type)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+   RETURNING user_id, first_name, last_name, email, phone_number, business_name, type`,
         [
           first_name,
           last_name,
@@ -225,6 +224,7 @@ export class UserService {
           business_name,
           date_of_birth,
           hashedPassword,
+          type,
         ],
       );
 
@@ -241,35 +241,50 @@ export class UserService {
     }
   }
 
-  async deleteUser(id: string, sessionId: string, res: Response) {
+  async deleteUser(id: string) {
     try {
       const existing = await pool.query(
-        'SELECT * FROM users WHERE user_id = $1',
+        'SELECT 1 FROM users WHERE user_id = $1',
         [id],
       );
-
       if (existing.rows.length === 0) {
         return { status: 404, data: { error: 'User not found' } };
       }
-
       await pool.query('DELETE FROM users WHERE user_id = $1', [id]);
-      await pool.query('DELETE FROM session WHERE sid = $1', [sessionId]);
-
-      res.setHeader(
-        'Set-Cookie',
-        serialize('sid', '', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 0,
-          path: '/',
-        }),
-      );
-
       return { status: 200, data: { message: 'User deleted successfully' } };
     } catch (err) {
       console.error('Error deleting user:', err);
       return { status: 500, data: { error: 'Failed to delete user' } };
     }
+  }
+
+  async verifyPassword(userId: string, password: string) {
+    try {
+      const result = await pool.query(
+        'SELECT password FROM users WHERE user_id = $1',
+        [userId],
+      );
+      if (result.rows.length === 0) {
+        return { status: 404, data: { error: 'User not found' } };
+      }
+
+      const user = result.rows[0];
+      const isValid = await argon2.verify(user.password, password);
+
+      return {
+        status: isValid ? 200 : 401,
+        data: { valid: isValid },
+      };
+    } catch (err) {
+      console.error('Error verifying password:', err);
+      return { status: 500, data: { error: 'Failed to verify password' } };
+    }
+  }
+
+  async findByEmail(email: string) {
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [
+      email,
+    ]);
+    return result.rows[0] || null;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 
 @Injectable()
@@ -202,6 +202,15 @@ export class ReceiptsService {
       return { status: 500, data: { error: 'Internal server error' } };
     } finally {
       client.release();
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE invoices RESTART IDENTITY CASCADE');
+      return { message: `Receipts (invoices) table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

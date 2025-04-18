@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 
 @Injectable()
@@ -35,8 +35,11 @@ export class LabourService {
       full_name,
       date_of_birth,
       gender,
-      guardian_name,
-      address,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
       contact_number,
       aadhar_card_number,
     } = body;
@@ -46,8 +49,10 @@ export class LabourService {
       !full_name ||
       !date_of_birth ||
       !gender ||
-      !guardian_name ||
-      !address ||
+      !address_line_1 ||
+      !city ||
+      !state ||
+      !postal_code ||
       !contact_number ||
       !aadhar_card_number
     ) {
@@ -56,20 +61,36 @@ export class LabourService {
 
     try {
       const query = `
-        INSERT INTO labours (user_id, full_name, date_of_birth, gender, guardian_name, address, contact_number, aadhar_card_number, role) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Worker') 
-        RETURNING *;
-      `;
+  INSERT INTO labours (
+    user_id, full_name, date_of_birth, gender,
+    address_line_1, address_line_2, city, state, postal_code,
+    contact_number, aadhar_card_number, role,
+    base_salary, bonus, overtime_pay, housing_allowance, travel_allowance, meal_allowance, payment_frequency
+  ) 
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+  RETURNING *;
+`;
 
       const values = [
         user_id,
         full_name,
         date_of_birth,
         gender,
-        guardian_name,
-        address,
+        address_line_1,
+        address_line_2,
+        city,
+        state,
+        postal_code,
         contact_number,
         aadhar_card_number,
+        body.role,
+        body.base_salary ?? 0.0,
+        body.bonus ?? 0.0,
+        body.overtime_pay ?? 0.0,
+        body.housing_allowance ?? 0.0,
+        body.travel_allowance ?? 0.0,
+        body.meal_allowance ?? 0.0,
+        body.payment_frequency ?? 'Monthly',
       ];
 
       const { rows } = await pool.query(query, values);
@@ -130,7 +151,6 @@ export class LabourService {
       };
 
       if (body.full_name) push('full_name', body.full_name);
-      if (body.guardian_name) push('guardian_name', body.guardian_name);
       if (body.date_of_birth) {
         const formatted = body.date_of_birth.split('/').reverse().join('-');
         push('date_of_birth', formatted);
@@ -140,8 +160,11 @@ export class LabourService {
       if (body.contact_number) push('contact_number', body.contact_number);
       if (body.aadhar_card_number)
         push('aadhar_card_number', body.aadhar_card_number);
-      if (body.address) push('address', body.address);
-      if (body.voter_id) push('voter_id', body.voter_id);
+      if (body.address_line_1) push('address_line_1', body.address_line_1);
+      if (body.address_line_2) push('address_line_2', body.address_line_2);
+      if (body.city) push('city', body.city);
+      if (body.state) push('state', body.state);
+      if (body.postal_code) push('postal_code', body.postal_code);
       if (body.ration_card) push('ration_card', body.ration_card);
       if (body.pan_card) push('pan_card', body.pan_card);
       if (body.driving_license) push('driving_license', body.driving_license);
@@ -157,6 +180,18 @@ export class LabourService {
       if (body.epfo) push('epfo', body.epfo);
       if (body.esic) push('esic', body.esic);
       if (body.pm_kisan !== undefined) push('pm_kisan', body.pm_kisan);
+      if (body.base_salary !== undefined) push('base_salary', body.base_salary);
+      if (body.bonus !== undefined) push('bonus', body.bonus);
+      if (body.overtime_pay !== undefined)
+        push('overtime_pay', body.overtime_pay);
+      if (body.housing_allowance !== undefined)
+        push('housing_allowance', body.housing_allowance);
+      if (body.travel_allowance !== undefined)
+        push('travel_allowance', body.travel_allowance);
+      if (body.meal_allowance !== undefined)
+        push('meal_allowance', body.meal_allowance);
+      if (body.payment_frequency)
+        push('payment_frequency', body.payment_frequency);
 
       if (updateFields.length === 0) {
         return { status: 400, data: { error: 'No fields provided to update' } };
@@ -181,6 +216,15 @@ export class LabourService {
     } catch (error) {
       console.error('Error updating labour:', error);
       return { status: 500, data: { error: 'Internal Server Error' } };
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE labours RESTART IDENTITY CASCADE');
+      return { message: `Labours table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }
