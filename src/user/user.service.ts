@@ -252,27 +252,6 @@ export class UserService {
     }
   }
 
-  async getUserTypeById(id: string) {
-    try {
-      const result = await pool.query(
-        'SELECT type FROM users WHERE user_id = $1',
-        [id],
-      );
-
-      if (result.rows.length === 0) {
-        return { status: 404, data: { error: 'User not found' } };
-      }
-
-      return {
-        status: 200,
-        data: { type: result.rows[0].type },
-      };
-    } catch (err) {
-      console.error('Error fetching user type:', err);
-      return { status: 500, data: { error: 'Failed to fetch user type' } };
-    }
-  }
-
   async verifyPassword(userId: string, password: string) {
     try {
       const result = await pool.query(
@@ -301,33 +280,5 @@ export class UserService {
       email,
     ]);
     return result.rows[0] || null;
-  }
-
-  async getUserCount() {
-    try {
-      const result = await pool.query('SELECT COUNT(*) FROM users');
-      return {
-        status: 200,
-        data: { total_users: parseInt(result.rows[0].count, 10) },
-      };
-    } catch (err) {
-      console.error('Error fetching user count:', err);
-      return { status: 500, data: { error: 'Failed to fetch user count' } };
-    }
-  }
-
-  async getAllUsersMinimal() {
-    try {
-      const result = await pool.query(`
-      SELECT user_id, first_name, last_name, email, business_name, type
-      FROM users
-      ORDER BY created_at DESC
-    `);
-
-      return { status: 200, data: { users: result.rows } };
-    } catch (err) {
-      console.error('Error fetching all users:', err);
-      return { status: 500, data: { error: 'Failed to fetch all users' } };
-    }
   }
 }

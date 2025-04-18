@@ -9,6 +9,7 @@ import {
   Query,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import {
@@ -16,12 +17,14 @@ import {
   UpdateInventoryDto,
   ResetInventoryDto,
 } from './inventory.dto';
+import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 
 @Controller('api/inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   // GET: http://localhost:3001/api/inventory/:userId?limit=&offset=&item_group=
+  @UseGuards(JwtAuthGuard)
   @Get(':userId')
   async getInventory(
     @Param('userId') userId: string,
@@ -30,11 +33,9 @@ export class InventoryController {
     @Query('item_group') itemGroup?: string,
   ) {
     let items = await this.inventoryService.findByUserId(Number(userId));
-    // Optional filtering based on item_group.
     if (itemGroup) {
       items = items.filter((item) => item.item_group === itemGroup);
     }
-    // Optional pagination.
     if (offset) {
       items = items.slice(Number(offset));
     }
@@ -45,6 +46,7 @@ export class InventoryController {
   }
 
   // POST: http://localhost:3001/api/inventory/add
+  @UseGuards(JwtAuthGuard)
   @Post('add')
   async addInventory(@Body() createDto: CreateInventoryDto) {
     const newItem = await this.inventoryService.create(createDto);
@@ -52,6 +54,7 @@ export class InventoryController {
   }
 
   // PUT: http://localhost:3001/api/inventory/update/:id
+  @UseGuards(JwtAuthGuard)
   @Put('update/:id')
   async updateInventory(
     @Param('id') id: string,
@@ -68,6 +71,7 @@ export class InventoryController {
   }
 
   // DELETE: http://localhost:3001/api/inventory/delete/:id
+  @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
   async deleteInventory(@Param('id') id: string) {
     const deleted = await this.inventoryService.delete(Number(id));
@@ -78,6 +82,7 @@ export class InventoryController {
   }
 
   // POST: http://localhost:3001/api/inventory/reset
+  @UseGuards(JwtAuthGuard)
   @Post('reset')
   async resetInventory(@Body() resetDto: ResetInventoryDto) {
     return this.inventoryService.resetTable(resetDto.userId);

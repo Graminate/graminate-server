@@ -1,5 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { UserModule } from '../user/user.module'; // ✅
+import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -15,7 +15,7 @@ import { JwtStrategy } from './jwt.strategy';
         signOptions: { expiresIn: '3d' },
       }),
     }),
-    forwardRef(() => UserModule), // ✅ this breaks the circular reference
+    forwardRef(() => UserModule),
   ],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService],

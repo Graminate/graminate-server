@@ -10,21 +10,25 @@ import {
   UsePipes,
   ValidationPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { Response } from 'express';
 import { CreateCompanyDto } from './companies.dto';
+import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 
 @Controller('api/companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async getCompanies(@Param('id') id: string, @Res() res: Response) {
     const result = await this.companiesService.getCompanies(id);
     return res.status(result.status).json(result.data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getAllCompanies(
     @Res() res: Response,
@@ -41,6 +45,7 @@ export class CompaniesController {
     return res.status(result.status).json(result.data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('add')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async addCompany(@Body() body: CreateCompanyDto, @Res() res: Response) {
@@ -48,12 +53,14 @@ export class CompaniesController {
     return res.status(result.status).json(result.data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
   async deleteCompany(@Param('id') id: string, @Res() res: Response) {
     const result = await this.companiesService.deleteCompany(id);
     return res.status(result.status).json(result.data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put('update')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async updateCompany(@Body() body: any, @Res() res: Response) {
@@ -61,6 +68,7 @@ export class CompaniesController {
     return res.status(result.status).json(result.data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('reset')
   async reset(@Body('userId') userId: number, @Res() res: Response) {
     try {
