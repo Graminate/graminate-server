@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTaskDto, UpdateTaskDto } from './tasks.dto';
 import pool from '@/config/database';
 
@@ -24,9 +28,17 @@ export class TasksService {
     return rows[0];
   }
 
-  async getTasksByUser(userId: number) {
-    const query = `SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_on DESC;`;
-    const { rows } = await pool.query(query, [userId]);
+  async getTasksByUser(userId: number, project?: string) {
+    let query = 'SELECT * FROM tasks WHERE user_id = $1';
+    const params: any[] = [userId];
+
+    if (project) {
+      query += ' AND project = $2';
+      params.push(project);
+    }
+
+    query += ' ORDER BY created_on DESC';
+    const { rows } = await pool.query(query, params);
     return rows;
   }
 
