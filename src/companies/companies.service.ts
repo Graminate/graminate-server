@@ -204,7 +204,6 @@ export class CompaniesService {
 
   async resetTable(userId: number) {
     try {
-      console.log(`Resetting companies table for user ${userId}`);
       await pool.query('TRUNCATE companies RESTART IDENTITY CASCADE');
       return { message: `Companies table reset for user ${userId}` };
     } catch (error) {

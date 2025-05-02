@@ -9,7 +9,7 @@ import {
 
 export class CreateTaskDto {
   @IsInt()
-  user_id: number; // References users(user_id)
+  user_id: number;
 
   @IsNotEmpty()
   @IsString()

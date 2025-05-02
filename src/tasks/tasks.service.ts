@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -43,21 +44,40 @@ export class TasksService {
   }
 
   async updateTask(taskId: number, dto: UpdateTaskDto) {
-    // Dynamic update fields
-    const fields = Object.entries(dto).map(
-      ([key], idx) => `${key} = $${idx + 2}`,
-    );
-    const values = [taskId, ...Object.values(dto)];
-    const query = `
-      UPDATE tasks SET ${fields.join(', ')}
-      WHERE task_id = $1
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(query, values);
-    if (!rows.length) {
-      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    if (dto.priority && !['Low', 'Medium', 'High'].includes(dto.priority)) {
+      throw new BadRequestException('Invalid priority value');
     }
-    return rows[0];
+
+    const fields: string[] = [];
+    const values: (string | number | Date | null | undefined)[] = [];
+
+    Object.entries(dto).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = $${fields.length + 2}`);
+        values.push(value);
+      }
+    });
+
+    if (fields.length === 0) {
+      throw new BadRequestException('No fields to update');
+    }
+
+    const query = `
+    UPDATE tasks SET ${fields.join(', ')}
+    WHERE task_id = $1
+    RETURNING *;
+  `;
+
+    try {
+      const { rows } = await pool.query(query, [taskId, ...values]);
+      if (!rows.length) {
+        throw new NotFoundException(`Task with ID ${taskId} not found`);
+      }
+      return rows[0];
+    } catch (error) {
+      console.error('Database error:', error);
+      throw new InternalServerErrorException('Failed to update task');
+    }
   }
 
   async deleteTask(taskId: number) {
