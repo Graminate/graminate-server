@@ -8,6 +8,7 @@ import {
   Body,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto, ResetTaskDto, UpdateTaskDto } from './tasks.dto';
@@ -19,8 +20,8 @@ export class TasksController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
-  async getTasks(@Param('userId', ParseIntPipe) userId: number) {
-    const tasks = await this.tasksService.getTasksByUser(userId);
+  async getTasks(@Param('userId', ParseIntPipe) userId: number, @Query('project') project?: string) {
+    const tasks = await this.tasksService.getTasksByUser(userId, project);
     return { tasks };
   }
 
