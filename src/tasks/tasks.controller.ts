@@ -20,7 +20,10 @@ export class TasksController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
-  async getTasks(@Param('userId', ParseIntPipe) userId: number, @Query('project') project?: string) {
+  async getTasks(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query('project') project?: string,
+  ) {
     const tasks = await this.tasksService.getTasksByUser(userId, project);
     return { tasks };
   }
@@ -53,5 +56,15 @@ export class TasksController {
   @Post('reset')
   async resetInventory(@Body() resetDto: ResetTaskDto) {
     return this.tasksService.resetTable(resetDto.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('upcoming/:userId')
+  async getUpcomingTasks(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query('days', ParseIntPipe) days: number,
+  ) {
+    const tasks = await this.tasksService.getTasksDueSoon(userId, days);
+    return { tasks };
   }
 }

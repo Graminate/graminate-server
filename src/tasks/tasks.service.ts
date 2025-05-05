@@ -97,4 +97,25 @@ export class TasksService {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+  async getTasksDueSoon(userId: number, days: number) {
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + days);
+    const targetDateString = targetDate.toISOString().split('T')[0];
+
+    const query = `
+    SELECT * FROM tasks
+    WHERE user_id = $1
+    AND deadline = $2
+  `;
+    const params = [userId, targetDateString];
+
+    try {
+      const { rows } = await pool.query(query, params);
+      return rows;
+    } catch (error) {
+      console.error('Database error:', error);
+      throw new InternalServerErrorException('Failed to fetch upcoming tasks');
+    }
+  }
 }
