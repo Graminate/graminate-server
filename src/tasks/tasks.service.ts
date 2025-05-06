@@ -29,18 +29,33 @@ export class TasksService {
     return rows[0];
   }
 
-  async getTasksByUser(userId: number, project?: string) {
+  async getTasksByUser(
+    userId: number,
+    project?: string,
+    deadlineDate?: string,
+  ) {
     let query = 'SELECT * FROM tasks WHERE user_id = $1';
     const params: any[] = [userId];
+    let paramIndex = 2;
 
     if (project) {
-      query += ' AND project = $2';
+      query += ` AND project = $${paramIndex++}`;
       params.push(project);
     }
 
-    query += ' ORDER BY created_on DESC';
-    const { rows } = await pool.query(query, params);
-    return rows;
+    if (deadlineDate) {
+      query += ` AND (deadline AT TIME ZONE 'UTC')::date = $${paramIndex++}`;
+      params.push(deadlineDate);
+    }
+
+    query += ' ORDER BY deadline ASC NULLS LAST, created_on DESC';
+    try {
+      const { rows } = await pool.query(query, params);
+      return rows;
+    } catch (error) {
+      console.error('Error fetching tasks by user:', error);
+      throw new InternalServerErrorException('Failed to fetch tasks');
+    }
   }
 
   async updateTask(taskId: number, dto: UpdateTaskDto) {
@@ -100,13 +115,13 @@ export class TasksService {
 
   async getTasksDueSoon(userId: number, days: number) {
     const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + days);
-    const targetDateString = targetDate.toISOString().split('T')[0];
+    targetDate.setUTCDate(targetDate.getUTCDate() + days); // Work with UTC dates
+    const targetDateString = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD in UTC
 
     const query = `
     SELECT * FROM tasks
     WHERE user_id = $1
-    AND deadline = $2
+    AND (deadline AT TIME ZONE 'UTC')::date = $2 
   `;
     const params = [userId, targetDateString];
 

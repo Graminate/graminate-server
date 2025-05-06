@@ -23,8 +23,13 @@ export class TasksController {
   async getTasks(
     @Param('userId', ParseIntPipe) userId: number,
     @Query('project') project?: string,
+    @Query('deadlineDate') deadlineDate?: string,
   ) {
-    const tasks = await this.tasksService.getTasksByUser(userId, project);
+    const tasks = await this.tasksService.getTasksByUser(
+      userId,
+      project,
+      deadlineDate,
+    );
     return { tasks };
   }
 
