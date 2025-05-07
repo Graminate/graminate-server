@@ -52,6 +52,16 @@ export class CreateContractDto {
     { message: 'End date must be a valid ISO 8601 date string or null' },
   )
   end_date?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100, { message: 'Category cannot exceed 100 characters' })
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20, { message: 'Priority must be Low, Medium, or High' })
+  priority?: string;
 }
 
 export class UpdateContractDto {
@@ -95,4 +105,14 @@ export class UpdateContractDto {
     { message: 'End date must be a valid ISO 8601 date string or null' },
   )
   end_date?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100, { message: 'Category cannot exceed 100 characters' })
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20, { message: 'Priority must be Low, Medium, or High' })
+  priority?: string;
 }

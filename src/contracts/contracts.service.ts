@@ -33,13 +33,24 @@ export class ContractsService {
   }
 
   async addContract(createContractDto: CreateContractDto) {
-    const { user_id, deal_name, partner, amount, stage, start_date, end_date } =
-      createContractDto;
+    const {
+      user_id,
+      deal_name,
+      partner,
+      amount,
+      stage,
+      start_date,
+      end_date,
+      category,
+      priority,
+    } = createContractDto;
 
     try {
       const result = await pool.query(
-        `INSERT INTO deals (user_id, deal_name, partner, amount, stage, start_date, end_date) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        `INSERT INTO deals 
+       (user_id, deal_name, partner, amount, stage, start_date, end_date, category, priority) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+       RETURNING *`,
         [
           user_id,
           deal_name,
@@ -48,6 +59,8 @@ export class ContractsService {
           stage,
           start_date,
           end_date || null,
+          category || null,
+          priority || 'Medium',
         ],
       );
 
@@ -92,8 +105,17 @@ export class ContractsService {
   }
 
   async updateContract(updateContractDto: UpdateContractDto) {
-    const { id, deal_name, partner, amount, stage, start_date, end_date } =
-      updateContractDto;
+    const {
+      id,
+      deal_name,
+      partner,
+      amount,
+      stage,
+      start_date,
+      end_date,
+      category,
+      priority,
+    } = updateContractDto;
 
     if (isNaN(id) || id <= 0) {
       return { status: 400, data: { error: 'Invalid contract (deal) ID' } };
@@ -106,6 +128,8 @@ export class ContractsService {
       stage,
       start_date,
       end_date,
+      category,
+      priority,
     ];
     if (updateFields.every((field) => field === undefined)) {
       return { status: 400, data: { error: 'No update data provided' } };
@@ -149,6 +173,15 @@ export class ContractsService {
         values.push(end_date);
       }
 
+      if (category !== undefined) {
+        setClauses.push(`category = $${valueIndex++}`);
+        values.push(category);
+      }
+      if (priority !== undefined) {
+        setClauses.push(`priority = $${valueIndex++}`);
+        values.push(priority);
+      }
+
       if (setClauses.length === 0) {
         return { status: 400, data: { error: 'No update data provided' } };
       }
@@ -180,7 +213,9 @@ export class ContractsService {
   async resetTable(userId: number): Promise<{ message: string }> {
     try {
       await pool.query('TRUNCATE deals RESTART IDENTITY CASCADE');
-      return { message: `Contracts (deals) table reset initiated by user ${userId}`};
+      return {
+        message: `Contracts (deals) table reset initiated by user ${userId}`,
+      };
     } catch (error) {
       throw new InternalServerErrorException('Failed to reset contracts table');
     }
