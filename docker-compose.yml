@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: graminate-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: borneel1999
+      POSTGRES_DB: graminate
+    ports:
+      - '5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: graminate-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '3001:3000'
+    environment:
+      DB_USER: postgres
+      DB_HOST: postgres
+      DB_NAME: graminate
+      DB_PASSWORD: borneel1999
+      DB_PORT: 5432
+      NEXT_PUBLIC_EMAILJS_SERVICE_ID: service_bs66b1j
+      NEXT_PUBLIC_EMAILJS_TEMPLATE_ID: template_cwjtqzd
+      NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: 4mCVoV4stdlKOcZq0
+      EMAIL_USER: borneelphukan@gmail.com
+      EMAIL_PASS: mfoq srue ufnl ljbr
+      SESSION_SECRET: pxNdEQazu6
+      NODE_ENV: production
+      JWT_SECRET: 03ac22030bd54d6d14cd1ca218a661e7f82587e408cac1216cc474c116d78645
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
