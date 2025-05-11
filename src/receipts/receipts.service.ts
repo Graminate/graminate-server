@@ -11,7 +11,26 @@ export class ReceiptsService {
       }
 
       const result = await pool.query(
-        `SELECT * FROM invoices WHERE user_id = $1 ORDER BY receipt_date DESC`,
+        `SELECT
+            i.*,
+            COALESCE(
+                (
+                    SELECT json_agg(
+                        json_build_object(
+                            'item_id', ii.item_id,
+                            'description', ii.description,
+                            'quantity', ii.quantity,
+                            'rate', ii.rate
+                        )
+                    )
+                    FROM invoice_items ii
+                    WHERE ii.invoice_id = i.invoice_id
+                ),
+                '[]'::json
+            ) AS items
+         FROM invoices i
+         WHERE i.user_id = $1
+         ORDER BY i.receipt_date DESC`,
         [parsedId],
       );
 
@@ -40,6 +59,7 @@ export class ReceiptsService {
       shipping,
       notes,
       payment_terms,
+      items, // Added items here
     } = body;
 
     if (!user_id || !title || !bill_to || !due_date || !receipt_number) {
@@ -52,8 +72,11 @@ export class ReceiptsService {
       };
     }
 
+    const client = await pool.connect();
     try {
-      const result = await pool.query(
+      await client.query('BEGIN');
+
+      const invoiceResult = await client.query(
         `INSERT INTO invoices (
            user_id, title, bill_to, due_date, receipt_number,
            bill_to_address_line1, bill_to_address_line2, bill_to_city, bill_to_state, bill_to_postal_code, bill_to_country,
@@ -81,14 +104,34 @@ export class ReceiptsService {
         ],
       );
 
+      const newInvoice = invoiceResult.rows[0];
+      const newInvoiceId = newInvoice.invoice_id;
+
+      if (Array.isArray(items) && items.length > 0) {
+        const itemInsertQuery = `
+          INSERT INTO invoice_items (invoice_id, description, quantity, rate)
+          VALUES ($1, $2, $3, $4);
+        `;
+        for (const item of items) {
+          await client.query(itemInsertQuery, [
+            newInvoiceId,
+            item.description,
+            item.quantity,
+            item.rate,
+          ]);
+        }
+      }
+
+      await client.query('COMMIT');
       return {
         status: 201,
         data: {
           message: 'Invoice added successfully',
-          invoice: result.rows[0],
+          invoice: newInvoice, // Or you might want to re-fetch with items
         },
       };
     } catch (err) {
+      await client.query('ROLLBACK');
       console.error('Error adding invoice:', err);
       if (err.constraint === 'invoices_receipt_number_key') {
         return {
@@ -97,6 +140,8 @@ export class ReceiptsService {
         };
       }
       return { status: 500, data: { error: 'Internal Server Error' } };
+    } finally {
+      client.release();
     }
   }
 
@@ -134,7 +179,7 @@ export class ReceiptsService {
       invoice_id,
       user_id,
       title,
-      receipt_number, // Added
+      receipt_number,
       bill_to,
       payment_terms,
       due_date,
@@ -143,12 +188,12 @@ export class ReceiptsService {
       discount,
       shipping,
       items,
-      bill_to_address_line1, // Added
-      bill_to_address_line2, // Added
-      bill_to_city, // Added
-      bill_to_state, // Added
-      bill_to_postal_code, // Added
-      bill_to_country, // Added
+      bill_to_address_line1,
+      bill_to_address_line2,
+      bill_to_city,
+      bill_to_state,
+      bill_to_postal_code,
+      bill_to_country,
     } = body;
 
     if (!invoice_id) {
@@ -160,7 +205,7 @@ export class ReceiptsService {
       await client.query('BEGIN');
 
       const invoiceUpdateQuery = `
-        UPDATE invoices 
+        UPDATE invoices
         SET user_id = $1,
             title = $2,
             bill_to = $3,
@@ -210,11 +255,11 @@ export class ReceiptsService {
         return { status: 404, data: { error: 'Receipt not found' } };
       }
 
-      if (Array.isArray(items) && items.length > 0) {
-        await client.query('DELETE FROM invoice_items WHERE invoice_id = $1', [
-          invoice_id,
-        ]);
+      await client.query('DELETE FROM invoice_items WHERE invoice_id = $1', [
+        invoice_id,
+      ]);
 
+      if (Array.isArray(items) && items.length > 0) {
         const itemInsertQuery = `
           INSERT INTO invoice_items (invoice_id, description, quantity, rate)
           VALUES ($1, $2, $3, $4);
@@ -231,9 +276,25 @@ export class ReceiptsService {
       }
 
       await client.query('COMMIT');
+      // For consistency, you might want to re-fetch the invoice with its items here
+      // or ensure the frontend re-fetches or updates its local state with items.
+      // Returning invoiceResult.rows[0] only returns the main invoice data after update.
+      // For simplicity, we'll rely on frontend to have the full picture or re-fetch.
+      // A more robust solution would be to call a method like `this.getInvoiceById(invoice_id)`
+      // that fetches the invoice along with its items and return that.
+      // However, to stick closely to the existing pattern:
+      const updatedInvoiceData = invoiceResult.rows[0];
+
+      // Fetch items separately to include them in the response
+      const itemsResult = await client.query(
+        `SELECT item_id, description, quantity, rate FROM invoice_items WHERE invoice_id = $1`,
+        [invoice_id],
+      );
+      updatedInvoiceData.items = itemsResult.rows;
+
       return {
         status: 200,
-        data: { success: true, invoice: invoiceResult.rows[0] },
+        data: { success: true, invoice: updatedInvoiceData },
       };
     } catch (err) {
       await client.query('ROLLBACK');
