@@ -11,7 +11,7 @@ export class ReceiptsService {
       }
 
       const result = await pool.query(
-        `SELECT * FROM invoices WHERE user_id = $1 ORDER BY created_at DESC`,
+        `SELECT * FROM invoices WHERE user_id = $1 ORDER BY receipt_date DESC`,
         [parsedId],
       );
 
@@ -27,28 +27,58 @@ export class ReceiptsService {
       user_id,
       title,
       bill_to,
-      amount_paid,
-      amount_due,
       due_date,
-      status,
+      receipt_number,
+      bill_to_address_line1,
+      bill_to_address_line2,
+      bill_to_city,
+      bill_to_state,
+      bill_to_postal_code,
+      bill_to_country,
+      tax,
+      discount,
+      shipping,
+      notes,
+      payment_terms,
     } = body;
 
-    if (!user_id || !title || !bill_to || !amount_due || !due_date || !status) {
-      return { status: 400, data: { error: 'Missing required fields.' } };
-    }
-
-    const amountPaid = amount_paid ? parseFloat(amount_paid) : 0;
-    const amountDue = parseFloat(amount_due);
-    if (isNaN(amountPaid) || isNaN(amountDue)) {
-      return { status: 400, data: { error: 'Invalid amount values.' } };
+    if (!user_id || !title || !bill_to || !due_date || !receipt_number) {
+      return {
+        status: 400,
+        data: {
+          error:
+            'Missing required fields (user_id, title, bill_to, due_date, receipt_number).',
+        },
+      };
     }
 
     try {
       const result = await pool.query(
-        `INSERT INTO invoices (user_id, title, bill_to, amount_paid, amount_due, due_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO invoices (
+           user_id, title, bill_to, due_date, receipt_number,
+           bill_to_address_line1, bill_to_address_line2, bill_to_city, bill_to_state, bill_to_postal_code, bill_to_country,
+           tax, discount, shipping, notes, payment_terms
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
          RETURNING *;`,
-        [user_id, title, bill_to, amountPaid, amountDue, due_date, status],
+        [
+          user_id,
+          title,
+          bill_to,
+          due_date,
+          receipt_number,
+          bill_to_address_line1,
+          bill_to_address_line2,
+          bill_to_city,
+          bill_to_state,
+          bill_to_postal_code,
+          bill_to_country,
+          tax || 0,
+          discount || 0,
+          shipping || 0,
+          notes,
+          payment_terms,
+        ],
       );
 
       return {
@@ -60,6 +90,12 @@ export class ReceiptsService {
       };
     } catch (err) {
       console.error('Error adding invoice:', err);
+      if (err.constraint === 'invoices_receipt_number_key') {
+        return {
+          status: 409,
+          data: { error: 'Receipt number already exists.' },
+        };
+      }
       return { status: 500, data: { error: 'Internal Server Error' } };
     }
   }
@@ -98,20 +134,21 @@ export class ReceiptsService {
       invoice_id,
       user_id,
       title,
+      receipt_number, // Added
       bill_to,
-      ship_to,
       payment_terms,
       due_date,
-      po_number,
       notes,
-      terms,
-      amount_paid,
-      amount_due,
-      status,
       tax,
       discount,
       shipping,
       items,
+      bill_to_address_line1, // Added
+      bill_to_address_line2, // Added
+      bill_to_city, // Added
+      bill_to_state, // Added
+      bill_to_postal_code, // Added
+      bill_to_country, // Added
     } = body;
 
     if (!invoice_id) {
@@ -127,19 +164,20 @@ export class ReceiptsService {
         SET user_id = $1,
             title = $2,
             bill_to = $3,
-            ship_to = $4,
-            payment_terms = $5,
-            due_date = $6,
-            po_number = $7,
-            notes = $8,
-            terms = $9,
-            amount_paid = $10,
-            amount_due = $11,
-            status = $12,
-            tax = $13,
-            discount = $14,
-            shipping = $15
-        WHERE invoice_id = $16
+            payment_terms = $4,
+            due_date = $5,
+            notes = $6,
+            tax = $7,
+            discount = $8,
+            shipping = $9,
+            receipt_number = $10,
+            bill_to_address_line1 = $11,
+            bill_to_address_line2 = $12,
+            bill_to_city = $13,
+            bill_to_state = $14,
+            bill_to_postal_code = $15,
+            bill_to_country = $16
+        WHERE invoice_id = $17
         RETURNING *;
       `;
 
@@ -147,18 +185,19 @@ export class ReceiptsService {
         user_id,
         title,
         bill_to,
-        ship_to,
         payment_terms,
         due_date,
-        po_number,
         notes,
-        terms,
-        amount_paid,
-        amount_due,
-        status,
         tax,
         discount,
         shipping,
+        receipt_number,
+        bill_to_address_line1,
+        bill_to_address_line2,
+        bill_to_city,
+        bill_to_state,
+        bill_to_postal_code,
+        bill_to_country,
         invoice_id,
       ];
 
@@ -199,6 +238,12 @@ export class ReceiptsService {
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('Error updating receipt:', err);
+      if (err.constraint === 'invoices_receipt_number_key') {
+        return {
+          status: 409,
+          data: { error: 'Receipt number already exists.' },
+        };
+      }
       return { status: 500, data: { error: 'Internal server error' } };
     } finally {
       client.release();

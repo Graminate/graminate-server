@@ -5,10 +5,10 @@ import * as argon2 from 'argon2';
 @Injectable()
 export class UserService {
   getAllUsersMinimal() {
-      throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.');
   }
   getUserCount() {
-      throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.');
   }
   jwtService: any;
 
@@ -34,8 +34,10 @@ export class UserService {
             phone_number: user.phone_number,
             business_name: user.business_name,
             imageUrl: user.image_url || null,
+            profile_picture: user.profile_picture || null,
             language: user.language || 'English',
             time_format: user.time_format || '24-hour',
+            temperature_scale: user.temperature_scale || 'Celsius',
             type: user.type,
             sub_type: Array.isArray(user.sub_type)
               ? user.sub_type
@@ -58,6 +60,7 @@ export class UserService {
       phone_number,
       language,
       time_format,
+      temperature_scale,
       type,
       business_name,
       sub_type,
@@ -95,6 +98,10 @@ export class UserService {
         updateFields.push(`time_format = $${values.length + 1}`);
         values.push(time_format);
       }
+      if (temperature_scale !== undefined) {
+        updateFields.push(`temperature_scale = $${values.length + 1}`);
+        values.push(temperature_scale);
+      }
       if (type !== undefined) {
         updateFields.push(`type = $${values.length + 1}`);
         values.push(type);
@@ -104,7 +111,6 @@ export class UserService {
         values.push(business_name);
       }
 
-      // Add all subTypes to be added to Producer
       if (sub_type !== undefined) {
         const validSubTypes = ['Fishery', 'Poultry', 'Animal Husbandry'];
         const filteredSubTypes = Array.isArray(sub_type)
@@ -112,7 +118,7 @@ export class UserService {
           : [];
 
         updateFields.push(`sub_type = $${values.length + 1}`);
-        values.push(filteredSubTypes); // Postgres will accept text[] directly if passed as array
+        values.push(filteredSubTypes);
       }
 
       if (updateFields.length === 0) {
@@ -150,6 +156,9 @@ export class UserService {
         email: user.email,
         phone_number: user.phone_number,
         business_name: user.business_name,
+        language: user.language || 'English',
+        time_format: user.time_format || '24-hour',
+        temperature_scale: user.temperature_scale || 'Celsius',
       },
     };
   }
@@ -213,9 +222,9 @@ export class UserService {
       });
 
       const result = await pool.query(
-        `INSERT INTO users (first_name, last_name, email, phone_number, business_name, date_of_birth, password, type)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-   RETURNING user_id, first_name, last_name, email, phone_number, business_name, type`,
+        `INSERT INTO users (first_name, last_name, email, phone_number, business_name, date_of_birth, password, type, language, time_format, temperature_scale)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'English', '24-hour', 'Celsius') 
+   RETURNING user_id, first_name, last_name, email, phone_number, business_name, type, language, time_format, temperature_scale`,
         [
           first_name,
           last_name,
