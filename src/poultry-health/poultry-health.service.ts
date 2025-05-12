@@ -3,7 +3,6 @@ import pool from '@/config/database';
 
 @Injectable()
 export class PoultryHealthService {
-  // Fetch all poultry health records for a given user
   async getHealthRecords(userId: string): Promise<any[]> {
     try {
       const res = await pool.query(
@@ -16,7 +15,6 @@ export class PoultryHealthService {
     }
   }
 
-  // Add a new poultry health record
   async addHealthRecord(record: any): Promise<any> {
     const {
       user_id,

@@ -59,7 +59,7 @@ export class ReceiptsService {
       shipping,
       notes,
       payment_terms,
-      items, // Added items here
+      items,
     } = body;
 
     if (!user_id || !title || !bill_to || !due_date || !receipt_number) {
@@ -127,7 +127,7 @@ export class ReceiptsService {
         status: 201,
         data: {
           message: 'Invoice added successfully',
-          invoice: newInvoice, // Or you might want to re-fetch with items
+          invoice: newInvoice,
         },
       };
     } catch (err) {
@@ -276,16 +276,8 @@ export class ReceiptsService {
       }
 
       await client.query('COMMIT');
-      // For consistency, you might want to re-fetch the invoice with its items here
-      // or ensure the frontend re-fetches or updates its local state with items.
-      // Returning invoiceResult.rows[0] only returns the main invoice data after update.
-      // For simplicity, we'll rely on frontend to have the full picture or re-fetch.
-      // A more robust solution would be to call a method like `this.getInvoiceById(invoice_id)`
-      // that fetches the invoice along with its items and return that.
-      // However, to stick closely to the existing pattern:
       const updatedInvoiceData = invoiceResult.rows[0];
 
-      // Fetch items separately to include them in the response
       const itemsResult = await client.query(
         `SELECT item_id, description, quantity, rate FROM invoice_items WHERE invoice_id = $1`,
         [invoice_id],

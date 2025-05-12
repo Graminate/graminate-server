@@ -15,7 +15,6 @@ import { CreateAdminDto } from './admin.dto';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  /** 1) Register */
   @Post('register')
   async register(@Body() dto: CreateAdminDto) {
     return this.adminService.register(
@@ -26,7 +25,6 @@ export class AdminController {
     );
   }
 
-  /** 2) Login */
   @Post('login')
   async login(
     @Body('email') email: string,
@@ -35,7 +33,6 @@ export class AdminController {
     return this.adminService.login(email, password);
   }
 
-  /** 3) List all users */
   @UseGuards(JwtAuthGuard)
   @Get('all-users')
   async allUsers(@Request() req) {
@@ -43,7 +40,6 @@ export class AdminController {
     return this.adminService.getAllUsers();
   }
 
-  /** 4) Total user count */
   @UseGuards(JwtAuthGuard)
   @Get('user-count')
   async userCount(@Request() req) {
