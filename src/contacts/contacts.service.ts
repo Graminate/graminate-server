@@ -51,8 +51,6 @@ export class ContactsService {
     if (
       !user_id ||
       !first_name ||
-      !last_name ||
-      !email ||
       !phone_number ||
       !type ||
       !address_line_1 ||
@@ -73,8 +71,8 @@ export class ContactsService {
         [
           user_id,
           first_name,
-          last_name,
-          email,
+          last_name || null,
+          email || null,
           phone_number,
           type,
           address_line_1,
@@ -158,34 +156,38 @@ export class ContactsService {
         return { status: 404, data: { error: 'Contact not found' } };
       }
 
-      const result = await pool.query(
-        `UPDATE contacts 
-         SET first_name = COALESCE($1, first_name),
-             last_name = COALESCE($2, last_name),
-             email = COALESCE($3, email),
-             phone_number = COALESCE($4, phone_number),
-             type = COALESCE($5, type),
-             address_line_1 = COALESCE($6, address_line_1),
-             address_line_2 = COALESCE($7, address_line_2),
-             city = COALESCE($8, city),
-             state = COALESCE($9, state),
-             postal_code = COALESCE($10, postal_code)
-         WHERE contact_id = $11
-         RETURNING *`,
-        [
-          first_name,
-          last_name,
-          email,
-          phone_number,
-          type,
-          address_line_1,
-          address_line_2 || null,
-          city,
-          state,
-          postal_code,
-          parsedId,
-        ],
-      );
+      const sql = `
+        UPDATE contacts 
+        SET first_name = $1,
+            last_name = $2,
+            email = $3,
+            phone_number = $4,
+            type = $5,
+            address_line_1 = $6,
+            address_line_2 = $7,
+            city = $8,
+            state = $9,
+            postal_code = $10
+        WHERE contact_id = $11
+        RETURNING *`;
+
+      const params = [
+        first_name,
+        last_name || null,
+        email || null,
+        typeof phone_number === 'string' && phone_number.trim() === ''
+          ? null
+          : phone_number,
+        type,
+        address_line_1,
+        address_line_2 || null,
+        city,
+        state,
+        postal_code,
+        parsedId,
+      ];
+
+      const result = await pool.query(sql, params);
 
       return {
         status: 200,
