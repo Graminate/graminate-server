@@ -5,6 +5,7 @@ export class CreateInventoryDto {
   units: string;
   quantity: number;
   price_per_unit: number;
+  warehouse_id?: number;
 }
 
 export class UpdateInventoryDto {
