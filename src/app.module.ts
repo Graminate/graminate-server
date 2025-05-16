@@ -9,6 +9,7 @@ import { LabourModule } from './labour/labour.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { PasswordModule } from './password/password.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
 import { LabourPaymentModule } from './labour_payment/labour_payment.module';
 import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -25,6 +26,7 @@ import { AdminModule } from './admin/admin.module';
     TasksModule,
     LabourModule,
     InventoryModule,
+    WarehouseModule,
     LabourPaymentModule,
     ReceiptsModule,
     PasswordModule,
