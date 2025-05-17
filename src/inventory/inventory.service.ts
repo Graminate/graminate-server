@@ -1,7 +1,6 @@
-// inventory.service.ts
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
-import { CreateInventoryDto } from './inventory.dto'; // Import the DTO
+import { CreateInventoryDto, UpdateInventoryDto } from './inventory.dto';
 
 interface InventoryFilters {
   limit?: number;
@@ -17,7 +16,8 @@ export class InventoryService {
     filters: InventoryFilters,
   ): Promise<any[]> {
     const { limit, offset, itemGroup, warehouseId } = filters;
-    let query = 'SELECT * FROM inventory WHERE user_id = $1';
+    let query =
+      'SELECT *, COALESCE(minimum_limit, 0) as minimum_limit FROM inventory WHERE user_id = $1';
     const queryParams: any[] = [userId];
     let paramIndex = 2;
 
@@ -33,7 +33,7 @@ export class InventoryService {
       paramIndex++;
     }
 
-    query += ' ORDER BY created_at DESC, inventory_id DESC'; // Added fallback sort
+    query += ' ORDER BY created_at DESC, inventory_id DESC';
 
     if (limit !== undefined) {
       query += ` LIMIT $${paramIndex}`;
@@ -44,7 +44,6 @@ export class InventoryService {
     if (offset !== undefined) {
       query += ` OFFSET $${paramIndex}`;
       queryParams.push(offset);
-      // paramIndex++; // No more params after offset
     }
 
     try {
@@ -71,12 +70,13 @@ export class InventoryService {
       units,
       quantity,
       price_per_unit,
-      warehouse_id, // Destructure warehouse_id
+      warehouse_id,
+      minimum_limit,
     } = createDto;
     try {
       const result = await pool.query(
-        `INSERT INTO inventory (user_id, item_name, item_group, units, quantity, price_per_unit, warehouse_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        `INSERT INTO inventory (user_id, item_name, item_group, units, quantity, price_per_unit, warehouse_id, minimum_limit)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
         [
           user_id,
           item_name,
@@ -84,7 +84,8 @@ export class InventoryService {
           units,
           quantity,
           price_per_unit,
-          warehouse_id, // Pass warehouse_id to the query
+          warehouse_id,
+          minimum_limit,
         ],
       );
       return result.rows[0];
@@ -93,10 +94,15 @@ export class InventoryService {
     }
   }
 
-  async update(id: number, updateDto: any): Promise<any> {
-    const { item_name, item_group, units, quantity, price_per_unit } =
-      updateDto;
-    // If you decide to make warehouse_id updatable, add it here and to the query
+  async update(id: number, updateDto: UpdateInventoryDto): Promise<any> {
+    const {
+      item_name,
+      item_group,
+      units,
+      quantity,
+      price_per_unit,
+      minimum_limit,
+    } = updateDto;
     try {
       const result = await pool.query(
         `UPDATE inventory SET
@@ -104,9 +110,18 @@ export class InventoryService {
             item_group = COALESCE($2, item_group),
             units = COALESCE($3, units),
             quantity = COALESCE($4, quantity),
-            price_per_unit = COALESCE($5, price_per_unit)
-         WHERE inventory_id = $6 RETURNING *`,
-        [item_name, item_group, units, quantity, price_per_unit, id],
+            price_per_unit = COALESCE($5, price_per_unit),
+            minimum_limit = COALESCE($6, minimum_limit)
+         WHERE inventory_id = $7 RETURNING *`,
+        [
+          item_name,
+          item_group,
+          units,
+          quantity,
+          price_per_unit,
+          minimum_limit,
+          id,
+        ],
       );
       return result.rows[0];
     } catch (error) {
@@ -128,12 +143,8 @@ export class InventoryService {
 
   async resetTable(userId: number): Promise<{ message: string }> {
     try {
-      // Be careful with TRUNCATE. This will delete ALL inventory for ALL users
-      // if not scoped correctly. Consider deleting only for a specific user if needed.
-      // For now, assuming this is an admin action to clear all inventory.
-      // If it's user-specific reset, it should be DELETE FROM inventory WHERE user_id = $1
       await pool.query('TRUNCATE inventory RESTART IDENTITY CASCADE');
-      return { message: `Inventory table reset for user ${userId}` }; // Message might be misleading if it's global.
+      return { message: `Inventory table reset for user ${userId}` };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
