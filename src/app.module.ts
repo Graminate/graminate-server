@@ -11,7 +11,6 @@ import { PasswordModule } from './password/password.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { LabourPaymentModule } from './labour_payment/labour_payment.module';
-import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 import { TasksModule } from './tasks/tasks.module';
 import { AdminModule } from './admin/admin.module';
 import { FlockModule } from './flock/flock.module';
@@ -32,7 +31,6 @@ import { FlockModule } from './flock/flock.module';
     ReceiptsModule,
     PasswordModule,
     FlockModule,
-    PoultryHealthModule,
     AdminModule,
   ],
 })
