@@ -14,6 +14,7 @@ import { LabourPaymentModule } from './labour_payment/labour_payment.module';
 import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 import { TasksModule } from './tasks/tasks.module';
 import { AdminModule } from './admin/admin.module';
+import { FlockModule } from './flock/flock.module';
 
 @Module({
   imports: [
@@ -30,8 +31,9 @@ import { AdminModule } from './admin/admin.module';
     LabourPaymentModule,
     ReceiptsModule,
     PasswordModule,
+    FlockModule,
     PoultryHealthModule,
-    AdminModule
+    AdminModule,
   ],
 })
 export class AppModule {}
