@@ -38,8 +38,6 @@ export class FlockController {
     if (!flock) {
       throw new HttpException('Flock not found', HttpStatus.NOT_FOUND);
     }
-    // Note: includeUser logic would typically be handled in the service if it affects the query
-    // For now, controller just passes it, service would need adjustment if `includeUser` changes the SQL query
     return flock;
   }
 
@@ -65,8 +63,7 @@ export class FlockController {
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
   async deleteFlock(@Param('id', ParseIntPipe) id: number) {
-    // Changed id type to number
-    const deleted = await this.flockService.delete(id); // Pass number directly
+    const deleted = await this.flockService.delete(id);
     if (!deleted) {
       throw new HttpException(
         'Flock not found or could not be deleted',
@@ -78,7 +75,7 @@ export class FlockController {
 
   @UseGuards(JwtAuthGuard)
   @Post('reset')
-  async resetFlocks(@Body() resetDto: ResetFlockDto) {
-    return this.flockService.resetTable(resetDto.userId);
+  async reset(@Body('userId') userId: number) {
+    return this.flockService.resetTable(userId);
   }
 }

@@ -16,6 +16,22 @@ export class CreateFlockDto {
   @IsNumber()
   @IsNotEmpty()
   quantity: number;
+
+  @IsOptional()
+  @IsString()
+  breed?: string;
+
+  @IsOptional()
+  @IsString()
+  source?: string;
+
+  @IsOptional()
+  @IsString()
+  housing_type?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
 
 export class UpdateFlockDto {
@@ -33,6 +49,22 @@ export class UpdateFlockDto {
   @IsNumber()
   @IsNotEmpty()
   quantity?: number;
+
+  @IsOptional()
+  @IsString()
+  breed?: string;
+
+  @IsOptional()
+  @IsString()
+  source?: string;
+
+  @IsOptional()
+  @IsString()
+  housing_type?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
 
 export class ResetFlockDto {

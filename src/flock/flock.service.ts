@@ -7,7 +7,7 @@ export class FlockService {
   async findByUserId(userId: number): Promise<any[]> {
     try {
       const result = await pool.query(
-        'SELECT flock_id, user_id, flock_name, flock_type, quantity, created_at FROM poultry_flock WHERE user_id = $1 ORDER BY created_at DESC, flock_id DESC',
+        'SELECT flock_id, user_id, flock_name, flock_type, quantity, created_at, breed, source, housing_type, notes FROM poultry_flock WHERE user_id = $1 ORDER BY created_at DESC, flock_id DESC',
         [userId],
       );
       return result.rows;
@@ -20,7 +20,7 @@ export class FlockService {
   async findById(flockId: number): Promise<any> {
     try {
       const result = await pool.query(
-        'SELECT flock_id, user_id, flock_name, flock_type, quantity, created_at FROM poultry_flock WHERE flock_id = $1',
+        'SELECT flock_id, user_id, flock_name, flock_type, quantity, created_at, breed, source, housing_type, notes FROM poultry_flock WHERE flock_id = $1',
         [flockId],
       );
       if (result.rows.length === 0) {
@@ -34,12 +34,30 @@ export class FlockService {
   }
 
   async create(createDto: CreateFlockDto): Promise<any> {
-    const { user_id, flock_name, flock_type, quantity } = createDto;
+    const {
+      user_id,
+      flock_name,
+      flock_type,
+      quantity,
+      breed,
+      source,
+      housing_type,
+      notes,
+    } = createDto;
     try {
       const result = await pool.query(
-        `INSERT INTO poultry_flock (user_id, flock_name, flock_type, quantity)
-         VALUES ($1, $2, $3, $4) RETURNING flock_id, user_id, flock_name, flock_type, quantity, created_at`,
-        [user_id, flock_name, flock_type, quantity],
+        `INSERT INTO poultry_flock (user_id, flock_name, flock_type, quantity, breed, source, housing_type, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING flock_id, user_id, flock_name, flock_type, quantity, created_at, breed, source, housing_type, notes`,
+        [
+          user_id,
+          flock_name,
+          flock_type,
+          quantity,
+          breed,
+          source,
+          housing_type,
+          notes,
+        ],
       );
       return result.rows[0];
     } catch (error) {
@@ -49,7 +67,15 @@ export class FlockService {
   }
 
   async update(id: number, updateDto: UpdateFlockDto): Promise<any> {
-    const { flock_name, flock_type, quantity } = updateDto;
+    const {
+      flock_name,
+      flock_type,
+      quantity,
+      breed,
+      source,
+      housing_type,
+      notes,
+    } = updateDto;
     const fieldsToUpdate: string[] = [];
     const values: any[] = [];
     let query = 'UPDATE poultry_flock SET ';
@@ -66,13 +92,29 @@ export class FlockService {
       fieldsToUpdate.push(`quantity = $${fieldsToUpdate.length + 1}`);
       values.push(quantity);
     }
+    if (breed !== undefined) {
+      fieldsToUpdate.push(`breed = $${fieldsToUpdate.length + 1}`);
+      values.push(breed);
+    }
+    if (source !== undefined) {
+      fieldsToUpdate.push(`source = $${fieldsToUpdate.length + 1}`);
+      values.push(source);
+    }
+    if (housing_type !== undefined) {
+      fieldsToUpdate.push(`housing_type = $${fieldsToUpdate.length + 1}`);
+      values.push(housing_type);
+    }
+    if (notes !== undefined) {
+      fieldsToUpdate.push(`notes = $${fieldsToUpdate.length + 1}`);
+      values.push(notes);
+    }
 
     if (fieldsToUpdate.length === 0) {
       return this.findById(id);
     }
 
     query += fieldsToUpdate.join(', ');
-    query += ` WHERE flock_id = $${fieldsToUpdate.length + 1} RETURNING flock_id, user_id, flock_name, flock_type, quantity, created_at`;
+    query += ` WHERE flock_id = $${fieldsToUpdate.length + 1} RETURNING flock_id, user_id, flock_name, flock_type, quantity, created_at, breed, source, housing_type, notes`;
     values.push(id);
 
     try {
@@ -103,7 +145,7 @@ export class FlockService {
   async resetTable(userId: number): Promise<{ message: string }> {
     try {
       await pool.query('TRUNCATE poultry_flock RESTART IDENTITY CASCADE');
-      return { message: `Poultry Flock table reset for user ${userId}` };
+      return { message: `Flock table reset for user ${userId}` };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
