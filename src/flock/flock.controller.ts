@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UseGuards,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
@@ -29,11 +30,16 @@ export class FlockController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async getById(@Param('id', ParseIntPipe) id: number) {
+  async getById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('includeUser') includeUser?: string,
+  ) {
     const flock = await this.flockService.findById(id);
     if (!flock) {
       throw new HttpException('Flock not found', HttpStatus.NOT_FOUND);
     }
+    // Note: includeUser logic would typically be handled in the service if it affects the query
+    // For now, controller just passes it, service would need adjustment if `includeUser` changes the SQL query
     return flock;
   }
 
@@ -58,8 +64,9 @@ export class FlockController {
 
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
-  async deleteFlock(@Param('id', ParseIntPipe) id: string) {
-    const deleted = await this.flockService.delete(Number(id));
+  async deleteFlock(@Param('id', ParseIntPipe) id: number) {
+    // Changed id type to number
+    const deleted = await this.flockService.delete(id); // Pass number directly
     if (!deleted) {
       throw new HttpException(
         'Flock not found or could not be deleted',

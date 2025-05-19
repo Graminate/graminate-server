@@ -1,10 +1,4 @@
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  IsDateString,
-  IsOptional,
-} from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsOptional } from 'class-validator';
 
 export class CreateFlockDto {
   @IsNumber()
@@ -22,10 +16,6 @@ export class CreateFlockDto {
   @IsNumber()
   @IsNotEmpty()
   quantity: number;
-
-  @IsDateString()
-  @IsNotEmpty()
-  date_created: string;
 }
 
 export class UpdateFlockDto {
@@ -43,11 +33,6 @@ export class UpdateFlockDto {
   @IsNumber()
   @IsNotEmpty()
   quantity?: number;
-
-  @IsOptional()
-  @IsDateString()
-  @IsNotEmpty()
-  date_created?: string;
 }
 
 export class ResetFlockDto {
