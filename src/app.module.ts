@@ -15,6 +15,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { AdminModule } from './admin/admin.module';
 import { FlockModule } from './flock/flock.module';
 import { PoultryHealthModule } from './poultry-health/poultry-health.module';
+import { FisheryModule } from './fishery/fishery.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { PoultryHealthModule } from './poultry-health/poultry-health.module';
     PasswordModule,
     FlockModule,
     PoultryHealthModule,
+    FisheryModule,
     AdminModule,
   ],
 })
