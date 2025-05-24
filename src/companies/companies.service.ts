@@ -40,7 +40,7 @@ export class CompaniesService {
     const requiredFields = [
       'user_id',
       'company_name',
-      'owner_name',
+      'contact_person',
       'email',
       'phone_number',
       'type',
@@ -78,11 +78,11 @@ export class CompaniesService {
       }
 
       const insertResult = await pool.query(
-        'INSERT INTO companies (user_id, company_name, owner_name, email, phone_number, type, address_line_1, address_line_2, city, state, postal_code) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING company_id',
+        'INSERT INTO companies (user_id, company_name, contact_person, email, phone_number, type, address_line_1, address_line_2, city, state, postal_code, website, industry) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING company_id',
         [
           body.user_id,
           body.company_name,
-          body.owner_name,
+          body.contact_person,
           body.email,
           body.phone_number,
           body.type,
@@ -91,6 +91,8 @@ export class CompaniesService {
           body.city,
           body.state,
           body.postal_code,
+          body.website || null,
+          body.industry || null,
         ],
       );
       const company = { company_id: insertResult.rows[0].company_id, ...body };
@@ -168,10 +170,10 @@ export class CompaniesService {
       }
 
       const updateResult = await pool.query(
-        'UPDATE companies SET company_name = $1, owner_name = $2, email = $3, phone_number = $4, type = $5, address_line_1 = $6, address_line_2 = $7, city = $8, state = $9, postal_code = $10 WHERE company_id = $11 RETURNING *',
+        'UPDATE companies SET company_name = $1, contact_person = $2, email = $3, phone_number = $4, type = $5, address_line_1 = $6, address_line_2 = $7, city = $8, state = $9, postal_code = $10, website = $11, industry = $12 WHERE company_id = $13 RETURNING *',
         [
           body.company_name,
-          body.owner_name,
+          body.contact_person, // Changed from owner_name
           body.email,
           body.phone_number,
           body.type,
@@ -180,6 +182,8 @@ export class CompaniesService {
           body.city,
           body.state,
           body.postal_code,
+          body.website || null, // New
+          body.industry || null, // New
           Number(body.id),
         ],
       );
@@ -204,7 +208,6 @@ export class CompaniesService {
 
   async resetTable(userId: number) {
     try {
-      console.log(`Resetting companies table for user ${userId}`);
       await pool.query('TRUNCATE companies RESTART IDENTITY CASCADE');
       return { message: `Companies table reset for user ${userId}` };
     } catch (error) {

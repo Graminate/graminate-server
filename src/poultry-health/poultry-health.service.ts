@@ -1,130 +1,182 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
+import {
+  CreatePoultryHealthDto,
+  UpdatePoultryHealthDto,
+} from './poultry-health.dto';
+
+interface PoultryHealthFilters {
+  limit?: number;
+  offset?: number;
+  flockId?: number;
+}
 
 @Injectable()
 export class PoultryHealthService {
-  // Fetch all poultry health records for a given user
-  async getHealthRecords(userId: string): Promise<any[]> {
+  async findByUserIdWithFilters(
+    userId: number,
+    filters: PoultryHealthFilters,
+  ): Promise<any[]> {
+    const { limit, offset, flockId } = filters;
+    let query = 'SELECT * FROM poultry_health WHERE user_id = $1';
+    const queryParams: any[] = [userId];
+    let paramIndex = 2;
+
+    if (flockId !== undefined) {
+      query += ` AND flock_id = $${paramIndex}`;
+      queryParams.push(flockId);
+      paramIndex++;
+    }
+
+    query += ' ORDER BY created_at DESC, poultry_health_id DESC';
+
+    if (limit !== undefined) {
+      query += ` LIMIT $${paramIndex}`;
+      queryParams.push(limit);
+      paramIndex++;
+    }
+
+    if (offset !== undefined) {
+      query += ` OFFSET $${paramIndex}`;
+      queryParams.push(offset);
+    }
+
     try {
-      const res = await pool.query(
-        `SELECT * FROM poultry_health WHERE user_id = $1 ORDER BY created_at DESC`,
-        [Number(userId)],
-      );
-      return res.rows;
+      const result = await pool.query(query, queryParams);
+      return result.rows;
     } catch (error) {
-      throw new InternalServerErrorException('Error fetching health records');
+      console.error(
+        'Error executing query in findByUserIdWithFilters (PoultryHealth):',
+        error,
+        query,
+        queryParams,
+      );
+      throw new InternalServerErrorException(
+        `Database query failed: ${error.message}`,
+      );
     }
   }
 
-  // Add a new poultry health record
-  async addHealthRecord(record: any): Promise<any> {
-    const {
-      user_id,
-      date,
-      veterinary_name,
-      bird_type,
-      purpose,
-      birds_in,
-      birds_died,
-      mortality_rate,
-      vaccines,
-      deworming,
-      symptoms,
-      medications,
-      actions_taken,
-      remarks,
-    } = record;
-
+  async findById(id: number): Promise<any> {
     try {
-      const res = await pool.query(
-        `INSERT INTO poultry_health (
-    user_id, date, veterinary_name, bird_type, purpose,
-    birds_in, birds_died, mortality_rate, vaccines, deworming,
-    symptoms, medications, actions_taken, remarks
-  ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-  RETURNING *`,
-        [
-          user_id,
-          date,
-          veterinary_name,
-          bird_type,
-          purpose,
-          birds_in,
-          birds_died,
-          mortality_rate,
-          vaccines,
-          deworming,
-          symptoms,
-          medications,
-          actions_taken,
-          remarks,
-        ],
-      );
-      return res.rows[0];
-    } catch (error) {
-      throw new InternalServerErrorException('Error adding health record');
-    }
-  }
-
-  async deleteHealthRecord(id: number): Promise<void> {
-    try {
-      await pool.query(
-        `DELETE FROM poultry_health WHERE poultry_health_id = $1`,
+      const result = await pool.query(
+        'SELECT * FROM poultry_health WHERE poultry_health_id = $1',
         [id],
       );
+      if (result.rows.length === 0) {
+        return null;
+      }
+      return result.rows[0];
     } catch (error) {
-      throw new InternalServerErrorException('Failed to delete record');
+      console.error(
+        'Error executing query in findById (PoultryHealth):',
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
     }
   }
 
-  async updateHealthRecord(id: number, record: any): Promise<any> {
+  async create(createDto: CreatePoultryHealthDto): Promise<any> {
+    const {
+      user_id,
+      flock_id,
+      veterinary_name,
+      total_birds,
+      birds_vaccinated,
+      vaccines_given,
+      symptoms,
+      medicine_approved,
+      remarks,
+      next_appointment,
+    } = createDto;
     try {
-      const res = await pool.query(
-        `UPDATE poultry_health SET 
-          date = $1,
-          veterinary_name = $2,
-          bird_type = $3,
-          purpose = $4,
-          birds_in = $5,
-          birds_died = $6,
-          vaccines = $7,
-          deworming = $8,
-          symptoms = $9,
-          medications = $10,
-          actions_taken = $11,
-          remarks = $12
-        WHERE poultry_health_id = $13
-        RETURNING *`,
+      const result = await pool.query(
+        `INSERT INTO poultry_health (user_id, flock_id, veterinary_name, total_birds, birds_vaccinated, vaccines_given, symptoms, medicine_approved, remarks, next_appointment)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
         [
-          record.date,
-          record.veterinary_name,
-          record.bird_type,
-          record.purpose,
-          record.birds_in,
-          record.birds_died,
-          record.vaccines,
-          record.deworming,
-          record.symptoms,
-          record.medications,
-          record.actions_taken,
-          record.remarks,
+          user_id,
+          flock_id,
+          veterinary_name,
+          total_birds,
+          birds_vaccinated,
+          vaccines_given,
+          symptoms,
+          medicine_approved,
+          remarks,
+          next_appointment,
+        ],
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error executing query in create (PoultryHealth):', error);
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  async update(id: number, updateDto: UpdatePoultryHealthDto): Promise<any> {
+    const {
+      veterinary_name,
+      total_birds,
+      birds_vaccinated,
+      vaccines_given,
+      symptoms,
+      medicine_approved,
+      remarks,
+      next_appointment,
+    } = updateDto;
+    try {
+      const result = await pool.query(
+        `UPDATE poultry_health SET
+            veterinary_name = COALESCE($1, veterinary_name),
+            total_birds = COALESCE($2, total_birds),
+            birds_vaccinated = COALESCE($3, birds_vaccinated),
+            vaccines_given = COALESCE($4, vaccines_given),
+            symptoms = COALESCE($5, symptoms),
+            medicine_approved = COALESCE($6, medicine_approved),
+            remarks = COALESCE($7, remarks),
+            next_appointment = COALESCE($8, next_appointment)
+         WHERE poultry_health_id = $9 RETURNING *`,
+        [
+          veterinary_name,
+          total_birds,
+          birds_vaccinated,
+          vaccines_given,
+          symptoms,
+          medicine_approved,
+          remarks,
+          next_appointment,
           id,
         ],
       );
-      return res.rows[0];
+      if (result.rows.length === 0) {
+        return null;
+      }
+      return result.rows[0];
     } catch (error) {
-      throw new InternalServerErrorException('Error updating health record');
+      console.error('Error executing query in update (PoultryHealth):', error);
+      throw new InternalServerErrorException(error.message);
     }
   }
 
-  // Reset poultry_health table
-  async resetHealthRecords(): Promise<void> {
+  async delete(id: number): Promise<boolean> {
     try {
-      await pool.query(`TRUNCATE poultry_health RESTART IDENTITY CASCADE`);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to reset poultry health records',
+      const result = await pool.query(
+        'DELETE FROM poultry_health WHERE poultry_health_id = $1',
+        [id],
       );
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error executing query in delete (PoultryHealth):', error);
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE poultry_health RESTART IDENTITY CASCADE');
+      return { message: `Poultry Health table reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

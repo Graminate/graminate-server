@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Res } from '@nestjs/common';
 import { PasswordService } from './password.service';
 import { Response } from 'express';
 

@@ -2,6 +2,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsOptional,
+  IsUrl,
   Matches,
   MaxLength,
 } from 'class-validator';
@@ -16,22 +17,22 @@ export class CreateCompanyDto {
 
   @IsNotEmpty()
   @MaxLength(50)
-  owner_name: string;
+  contact_person: string;
 
   @IsOptional()
   @IsEmail()
   @MaxLength(100)
   email?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @Matches(/^\+?[1-9][0-9]{1,14}$/, {
     message: 'Phone number must be in E.164 format',
   })
-  phone_number: string;
+  phone_number?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(50)
-  type: string;
+  type?: string;
 
   @IsNotEmpty()
   @MaxLength(255)
@@ -50,6 +51,15 @@ export class CreateCompanyDto {
   state: string;
 
   @IsNotEmpty()
-  @MaxLength(6)
+  @MaxLength(10)
   postal_code: string;
+
+  @IsOptional()
+  @IsUrl()
+  @MaxLength(255)
+  website?: string;
+
+  @IsOptional()
+  @MaxLength(50)
+  industry?: string;
 }

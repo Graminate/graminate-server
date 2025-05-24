@@ -10,7 +10,7 @@ import { UserModule } from '../user/user.module';
 @Module({
   imports: [
     ConfigModule,
-    UserModule, // so we can inject UserService
+    UserModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

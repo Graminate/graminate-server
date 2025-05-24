@@ -1,28 +1,92 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
+import { CreateInventoryDto, UpdateInventoryDto } from './inventory.dto';
+
+interface InventoryFilters {
+  limit?: number;
+  offset?: number;
+  itemGroup?: string;
+  warehouseId?: number;
+}
 
 @Injectable()
 export class InventoryService {
-  async findByUserId(userId: number): Promise<any[]> {
+  async findByUserIdWithFilters(
+    userId: number,
+    filters: InventoryFilters,
+  ): Promise<any[]> {
+    const { limit, offset, itemGroup, warehouseId } = filters;
+    let query =
+      'SELECT *, COALESCE(minimum_limit, 0) as minimum_limit FROM inventory WHERE user_id = $1';
+    const queryParams: any[] = [userId];
+    let paramIndex = 2;
+
+    if (warehouseId !== undefined) {
+      query += ` AND warehouse_id = $${paramIndex}`;
+      queryParams.push(warehouseId);
+      paramIndex++;
+    }
+
+    if (itemGroup) {
+      query += ` AND item_group = $${paramIndex}`;
+      queryParams.push(itemGroup);
+      paramIndex++;
+    }
+
+    query += ' ORDER BY created_at DESC, inventory_id DESC';
+
+    if (limit !== undefined) {
+      query += ` LIMIT $${paramIndex}`;
+      queryParams.push(limit);
+      paramIndex++;
+    }
+
+    if (offset !== undefined) {
+      query += ` OFFSET $${paramIndex}`;
+      queryParams.push(offset);
+    }
+
     try {
-      const result = await pool.query(
-        'SELECT * FROM inventory WHERE user_id = $1',
-        [userId],
-      );
+      const result = await pool.query(query, queryParams);
       return result.rows;
     } catch (error) {
-      throw new InternalServerErrorException(error.message);
+      console.error(
+        'Error executing query in findByUserIdWithFilters:',
+        error,
+        query,
+        queryParams,
+      );
+      throw new InternalServerErrorException(
+        `Database query failed: ${error.message}`,
+      );
     }
   }
 
-  async create(createDto: any): Promise<any> {
-    const { user_id, item_name, item_group, units, quantity, price_per_unit } =
-      createDto;
+  async create(createDto: CreateInventoryDto): Promise<any> {
+    const {
+      user_id,
+      item_name,
+      item_group,
+      units,
+      quantity,
+      price_per_unit,
+      warehouse_id,
+      minimum_limit,
+    } = createDto;
     try {
       const result = await pool.query(
-        `INSERT INTO inventory (user_id, item_name, item_group, units, quantity, price_per_unit) 
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [user_id, item_name, item_group, units, quantity, price_per_unit],
+        `INSERT INTO inventory (user_id, item_name, item_group, units, quantity, price_per_unit, warehouse_id, minimum_limit)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [
+          user_id,
+          item_name,
+          item_group,
+          units,
+          quantity,
+          price_per_unit,
+          warehouse_id,
+          minimum_limit,
+        ],
       );
       return result.rows[0];
     } catch (error) {
@@ -30,19 +94,34 @@ export class InventoryService {
     }
   }
 
-  async update(id: number, updateDto: any): Promise<any> {
-    const { item_name, item_group, units, quantity, price_per_unit } =
-      updateDto;
+  async update(id: number, updateDto: UpdateInventoryDto): Promise<any> {
+    const {
+      item_name,
+      item_group,
+      units,
+      quantity,
+      price_per_unit,
+      minimum_limit,
+    } = updateDto;
     try {
       const result = await pool.query(
-        `UPDATE inventory SET 
+        `UPDATE inventory SET
             item_name = COALESCE($1, item_name),
             item_group = COALESCE($2, item_group),
             units = COALESCE($3, units),
             quantity = COALESCE($4, quantity),
-            price_per_unit = COALESCE($5, price_per_unit)
-         WHERE inventory_id = $6 RETURNING *`,
-        [item_name, item_group, units, quantity, price_per_unit, id],
+            price_per_unit = COALESCE($5, price_per_unit),
+            minimum_limit = COALESCE($6, minimum_limit)
+         WHERE inventory_id = $7 RETURNING *`,
+        [
+          item_name,
+          item_group,
+          units,
+          quantity,
+          price_per_unit,
+          minimum_limit,
+          id,
+        ],
       );
       return result.rows[0];
     } catch (error) {

@@ -1,4 +1,3 @@
-// src/companies/companies.module.ts
 import { Module } from '@nestjs/common';
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';

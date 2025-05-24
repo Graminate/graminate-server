@@ -11,7 +11,26 @@ export class ReceiptsService {
       }
 
       const result = await pool.query(
-        `SELECT * FROM invoices WHERE user_id = $1 ORDER BY created_at DESC`,
+        `SELECT
+            i.*,
+            COALESCE(
+                (
+                    SELECT json_agg(
+                        json_build_object(
+                            'item_id', ii.item_id,
+                            'description', ii.description,
+                            'quantity', ii.quantity,
+                            'rate', ii.rate
+                        )
+                    )
+                    FROM invoice_items ii
+                    WHERE ii.invoice_id = i.invoice_id
+                ),
+                '[]'::json
+            ) AS items
+         FROM invoices i
+         WHERE i.user_id = $1
+         ORDER BY i.receipt_date DESC`,
         [parsedId],
       );
 
@@ -27,40 +46,102 @@ export class ReceiptsService {
       user_id,
       title,
       bill_to,
-      amount_paid,
-      amount_due,
       due_date,
-      status,
+      receipt_number,
+      bill_to_address_line1,
+      bill_to_address_line2,
+      bill_to_city,
+      bill_to_state,
+      bill_to_postal_code,
+      bill_to_country,
+      tax,
+      discount,
+      shipping,
+      notes,
+      payment_terms,
+      items,
     } = body;
 
-    if (!user_id || !title || !bill_to || !amount_due || !due_date || !status) {
-      return { status: 400, data: { error: 'Missing required fields.' } };
+    if (!user_id || !title || !bill_to || !due_date || !receipt_number) {
+      return {
+        status: 400,
+        data: {
+          error:
+            'Missing required fields (user_id, title, bill_to, due_date, receipt_number).',
+        },
+      };
     }
 
-    const amountPaid = amount_paid ? parseFloat(amount_paid) : 0;
-    const amountDue = parseFloat(amount_due);
-    if (isNaN(amountPaid) || isNaN(amountDue)) {
-      return { status: 400, data: { error: 'Invalid amount values.' } };
-    }
-
+    const client = await pool.connect();
     try {
-      const result = await pool.query(
-        `INSERT INTO invoices (user_id, title, bill_to, amount_paid, amount_due, due_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+      await client.query('BEGIN');
+
+      const invoiceResult = await client.query(
+        `INSERT INTO invoices (
+           user_id, title, bill_to, due_date, receipt_number,
+           bill_to_address_line1, bill_to_address_line2, bill_to_city, bill_to_state, bill_to_postal_code, bill_to_country,
+           tax, discount, shipping, notes, payment_terms
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
          RETURNING *;`,
-        [user_id, title, bill_to, amountPaid, amountDue, due_date, status],
+        [
+          user_id,
+          title,
+          bill_to,
+          due_date,
+          receipt_number,
+          bill_to_address_line1,
+          bill_to_address_line2,
+          bill_to_city,
+          bill_to_state,
+          bill_to_postal_code,
+          bill_to_country,
+          tax || 0,
+          discount || 0,
+          shipping || 0,
+          notes,
+          payment_terms,
+        ],
       );
 
+      const newInvoice = invoiceResult.rows[0];
+      const newInvoiceId = newInvoice.invoice_id;
+
+      if (Array.isArray(items) && items.length > 0) {
+        const itemInsertQuery = `
+          INSERT INTO invoice_items (invoice_id, description, quantity, rate)
+          VALUES ($1, $2, $3, $4);
+        `;
+        for (const item of items) {
+          await client.query(itemInsertQuery, [
+            newInvoiceId,
+            item.description,
+            item.quantity,
+            item.rate,
+          ]);
+        }
+      }
+
+      await client.query('COMMIT');
       return {
         status: 201,
         data: {
           message: 'Invoice added successfully',
-          invoice: result.rows[0],
+          invoice: newInvoice,
         },
       };
     } catch (err) {
+      await client.query('ROLLBACK');
       console.error('Error adding invoice:', err);
+      if (err.constraint === 'invoices_receipt_number_key') {
+        return {
+          status: 409,
+          data: { error: 'Receipt number already exists.' },
+        };
+      }
       return { status: 500, data: { error: 'Internal Server Error' } };
+    } finally {
+      client.release();
     }
   }
 
@@ -98,20 +179,21 @@ export class ReceiptsService {
       invoice_id,
       user_id,
       title,
+      receipt_number,
       bill_to,
-      ship_to,
       payment_terms,
       due_date,
-      po_number,
       notes,
-      terms,
-      amount_paid,
-      amount_due,
-      status,
       tax,
       discount,
       shipping,
       items,
+      bill_to_address_line1,
+      bill_to_address_line2,
+      bill_to_city,
+      bill_to_state,
+      bill_to_postal_code,
+      bill_to_country,
     } = body;
 
     if (!invoice_id) {
@@ -123,23 +205,24 @@ export class ReceiptsService {
       await client.query('BEGIN');
 
       const invoiceUpdateQuery = `
-        UPDATE invoices 
+        UPDATE invoices
         SET user_id = $1,
             title = $2,
             bill_to = $3,
-            ship_to = $4,
-            payment_terms = $5,
-            due_date = $6,
-            po_number = $7,
-            notes = $8,
-            terms = $9,
-            amount_paid = $10,
-            amount_due = $11,
-            status = $12,
-            tax = $13,
-            discount = $14,
-            shipping = $15
-        WHERE invoice_id = $16
+            payment_terms = $4,
+            due_date = $5,
+            notes = $6,
+            tax = $7,
+            discount = $8,
+            shipping = $9,
+            receipt_number = $10,
+            bill_to_address_line1 = $11,
+            bill_to_address_line2 = $12,
+            bill_to_city = $13,
+            bill_to_state = $14,
+            bill_to_postal_code = $15,
+            bill_to_country = $16
+        WHERE invoice_id = $17
         RETURNING *;
       `;
 
@@ -147,18 +230,19 @@ export class ReceiptsService {
         user_id,
         title,
         bill_to,
-        ship_to,
         payment_terms,
         due_date,
-        po_number,
         notes,
-        terms,
-        amount_paid,
-        amount_due,
-        status,
         tax,
         discount,
         shipping,
+        receipt_number,
+        bill_to_address_line1,
+        bill_to_address_line2,
+        bill_to_city,
+        bill_to_state,
+        bill_to_postal_code,
+        bill_to_country,
         invoice_id,
       ];
 
@@ -171,11 +255,11 @@ export class ReceiptsService {
         return { status: 404, data: { error: 'Receipt not found' } };
       }
 
-      if (Array.isArray(items) && items.length > 0) {
-        await client.query('DELETE FROM invoice_items WHERE invoice_id = $1', [
-          invoice_id,
-        ]);
+      await client.query('DELETE FROM invoice_items WHERE invoice_id = $1', [
+        invoice_id,
+      ]);
 
+      if (Array.isArray(items) && items.length > 0) {
         const itemInsertQuery = `
           INSERT INTO invoice_items (invoice_id, description, quantity, rate)
           VALUES ($1, $2, $3, $4);
@@ -192,13 +276,27 @@ export class ReceiptsService {
       }
 
       await client.query('COMMIT');
+      const updatedInvoiceData = invoiceResult.rows[0];
+
+      const itemsResult = await client.query(
+        `SELECT item_id, description, quantity, rate FROM invoice_items WHERE invoice_id = $1`,
+        [invoice_id],
+      );
+      updatedInvoiceData.items = itemsResult.rows;
+
       return {
         status: 200,
-        data: { success: true, invoice: invoiceResult.rows[0] },
+        data: { success: true, invoice: updatedInvoiceData },
       };
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('Error updating receipt:', err);
+      if (err.constraint === 'invoices_receipt_number_key') {
+        return {
+          status: 409,
+          data: { error: 'Receipt number already exists.' },
+        };
+      }
       return { status: 500, data: { error: 'Internal server error' } };
     } finally {
       client.release();

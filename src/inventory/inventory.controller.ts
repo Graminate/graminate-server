@@ -1,3 +1,4 @@
+// inventory.controller.ts
 import {
   Controller,
   Get,
@@ -13,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import {
-  CreateInventoryDto,
+  CreateInventoryDto, // Ensure this is imported
   UpdateInventoryDto,
   ResetInventoryDto,
 } from './inventory.dto';
@@ -23,7 +24,7 @@ import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
-  // GET: http://localhost:3001/api/inventory/:userId?limit=&offset=&item_group=
+  // GET: http://localhost:3001/api/inventory/:userId?limit=&offset=&item_group=&warehouse_id=
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
   async getInventory(
@@ -31,17 +32,17 @@ export class InventoryController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
     @Query('item_group') itemGroup?: string,
+    @Query('warehouse_id') warehouseId?: string,
   ) {
-    let items = await this.inventoryService.findByUserId(Number(userId));
-    if (itemGroup) {
-      items = items.filter((item) => item.item_group === itemGroup);
-    }
-    if (offset) {
-      items = items.slice(Number(offset));
-    }
-    if (limit) {
-      items = items.slice(0, Number(limit));
-    }
+    const items = await this.inventoryService.findByUserIdWithFilters(
+      Number(userId),
+      {
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
+        itemGroup: itemGroup,
+        warehouseId: warehouseId ? Number(warehouseId) : undefined,
+      },
+    );
     return { items };
   }
 
@@ -49,6 +50,7 @@ export class InventoryController {
   @UseGuards(JwtAuthGuard)
   @Post('add')
   async addInventory(@Body() createDto: CreateInventoryDto) {
+    // Use CreateInventoryDto
     const newItem = await this.inventoryService.create(createDto);
     return newItem;
   }
@@ -85,6 +87,7 @@ export class InventoryController {
   @UseGuards(JwtAuthGuard)
   @Post('reset')
   async resetInventory(@Body() resetDto: ResetInventoryDto) {
+    // Consider the scope of resetTable as mentioned in the service.
     return this.inventoryService.resetTable(resetDto.userId);
   }
 }

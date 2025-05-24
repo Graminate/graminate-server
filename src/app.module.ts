@@ -9,10 +9,15 @@ import { LabourModule } from './labour/labour.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { PasswordModule } from './password/password.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
 import { LabourPaymentModule } from './labour_payment/labour_payment.module';
-import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 import { TasksModule } from './tasks/tasks.module';
 import { AdminModule } from './admin/admin.module';
+import { FlockModule } from './flock/flock.module';
+import { PoultryHealthModule } from './poultry-health/poultry-health.module';
+import { FisheryModule } from './fishery/fishery.module';
+import { SalesModule } from './sales/sales.module';
+import { ExpensesModule } from './expenses/expenses.module';
 
 @Module({
   imports: [
@@ -25,11 +30,16 @@ import { AdminModule } from './admin/admin.module';
     TasksModule,
     LabourModule,
     InventoryModule,
+    WarehouseModule,
     LabourPaymentModule,
     ReceiptsModule,
     PasswordModule,
+    FlockModule,
     PoultryHealthModule,
-    AdminModule
+    FisheryModule,
+    SalesModule,
+    ExpensesModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

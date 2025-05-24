@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PoultryHealthService } from './poultry-health.service';
 import { PoultryHealthController } from './poultry-health.controller';
+import { PoultryHealthService } from './poultry-health.service';
 
 @Module({
   controllers: [PoultryHealthController],

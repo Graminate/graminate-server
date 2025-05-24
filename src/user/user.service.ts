@@ -5,10 +5,10 @@ import * as argon2 from 'argon2';
 @Injectable()
 export class UserService {
   getAllUsersMinimal() {
-      throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.');
   }
   getUserCount() {
-      throw new Error('Method not implemented.');
+    throw new Error('Method not implemented.');
   }
   jwtService: any;
 
@@ -33,15 +33,20 @@ export class UserService {
             email: user.email,
             phone_number: user.phone_number,
             business_name: user.business_name,
-            imageUrl: user.image_url || null,
             language: user.language || 'English',
             time_format: user.time_format || '24-hour',
+            temperature_scale: user.temperature_scale || 'Celsius',
             type: user.type,
             sub_type: Array.isArray(user.sub_type)
               ? user.sub_type
               : typeof user.sub_type === 'string'
                 ? user.sub_type.replace(/[{}"]/g, '').split(',').filter(Boolean)
                 : [],
+            address_line_1: user.address_line_1 || '',
+            address_line_2: user.address_line_2 || '',
+            city: user.city || '',
+            state: user.state || '',
+            postal_code: user.postal_code || '',
           },
         },
       };
@@ -58,9 +63,15 @@ export class UserService {
       phone_number,
       language,
       time_format,
+      temperature_scale,
       type,
       business_name,
       sub_type,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
     } = body;
 
     try {
@@ -95,6 +106,10 @@ export class UserService {
         updateFields.push(`time_format = $${values.length + 1}`);
         values.push(time_format);
       }
+      if (temperature_scale !== undefined) {
+        updateFields.push(`temperature_scale = $${values.length + 1}`);
+        values.push(temperature_scale);
+      }
       if (type !== undefined) {
         updateFields.push(`type = $${values.length + 1}`);
         values.push(type);
@@ -103,16 +118,35 @@ export class UserService {
         updateFields.push(`business_name = $${values.length + 1}`);
         values.push(business_name);
       }
+      if (address_line_1 !== undefined) {
+        updateFields.push(`address_line_1 = $${values.length + 1}`);
+        values.push(address_line_1);
+      }
+      if (address_line_2 !== undefined) {
+        updateFields.push(`address_line_2 = $${values.length + 1}`);
+        values.push(address_line_2);
+      }
+      if (city !== undefined) {
+        updateFields.push(`city = $${values.length + 1}`);
+        values.push(city);
+      }
+      if (state !== undefined) {
+        updateFields.push(`state = $${values.length + 1}`);
+        values.push(state);
+      }
+      if (postal_code !== undefined) {
+        updateFields.push(`postal_code = $${values.length + 1}`);
+        values.push(postal_code);
+      }
 
-      // Add all subTypes to be added to Producer
       if (sub_type !== undefined) {
-        const validSubTypes = ['Fishery', 'Poultry', 'Animal Husbandry'];
+        const validSubTypes = ['Fishery', 'Poultry', 'Cattle Rearing', 'Apiculture'];
         const filteredSubTypes = Array.isArray(sub_type)
           ? sub_type.filter((t) => validSubTypes.includes(t))
           : [];
 
         updateFields.push(`sub_type = $${values.length + 1}`);
-        values.push(filteredSubTypes); // Postgres will accept text[] directly if passed as array
+        values.push(filteredSubTypes);
       }
 
       if (updateFields.length === 0) {
@@ -150,6 +184,14 @@ export class UserService {
         email: user.email,
         phone_number: user.phone_number,
         business_name: user.business_name,
+        language: user.language || 'English',
+        time_format: user.time_format || '24-hour',
+        temperature_scale: user.temperature_scale || 'Celsius',
+        address_line_1: user.address_line_1 || '',
+        address_line_2: user.address_line_2 || '',
+        city: user.city || '',
+        state: user.state || '',
+        postal_code: user.postal_code || '',
       },
     };
   }
@@ -185,25 +227,48 @@ export class UserService {
       date_of_birth,
       password,
       type,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
     } = body;
 
     if (!first_name || !last_name || !email || !phone_number || !password) {
+      console.log('Missing required fields:', {
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        password,
+      });
       return { status: 400, data: { error: 'Missing required fields' } };
     }
 
+    const client = await pool.connect();
     try {
-      const existing = await pool.query(
-        'SELECT * FROM users WHERE email = $1 OR phone_number = $2',
+      await client.query('BEGIN');
+
+      // Check for existing user
+      const existing = await client.query(
+        'SELECT 1 FROM users WHERE email = $1 OR phone_number = $2 FOR UPDATE',
         [email, phone_number],
       );
 
       if (existing.rows.length > 0) {
+        console.log(
+          'User already exists with email/phone:',
+          email,
+          phone_number,
+        );
+        await client.query('ROLLBACK');
         return {
           status: 409,
           data: { error: 'Email or phone number already in use' },
         };
       }
 
+      // Hash password
       const hashedPassword = await argon2.hash(password, {
         type: argon2.argon2id,
         hashLength: 16,
@@ -212,22 +277,33 @@ export class UserService {
         parallelism: 1,
       });
 
-      const result = await pool.query(
-        `INSERT INTO users (first_name, last_name, email, phone_number, business_name, date_of_birth, password, type)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-   RETURNING user_id, first_name, last_name, email, phone_number, business_name, type`,
+      // Insert new user
+      const result = await client.query(
+        `INSERT INTO users (
+          first_name, last_name, email, phone_number, 
+          business_name, date_of_birth, password, type,
+          address_line_1, address_line_2, city, state, postal_code
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING user_id, first_name, last_name, email, phone_number, business_name`,
         [
           first_name,
           last_name,
           email,
           phone_number,
-          business_name,
-          date_of_birth,
+          business_name || null,
+          date_of_birth || null,
           hashedPassword,
-          type,
+          type || null,
+          address_line_1 || null,
+          address_line_2 || null,
+          city || null,
+          state || null,
+          postal_code || null,
         ],
       );
 
+      await client.query('COMMIT');
+      console.log('Successfully registered user:', result.rows[0]);
       return {
         status: 201,
         data: {
@@ -236,8 +312,13 @@ export class UserService {
         },
       };
     } catch (err) {
+      await client.query('ROLLBACK').catch((rollbackErr) => {
+        console.error('Error rolling back transaction:', rollbackErr);
+      });
       console.error('Error registering user:', err);
       return { status: 500, data: { error: 'Failed to register user' } };
+    } finally {
+      client.release();
     }
   }
 
