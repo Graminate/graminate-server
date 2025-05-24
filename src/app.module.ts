@@ -17,6 +17,7 @@ import { FlockModule } from './flock/flock.module';
 import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 import { FisheryModule } from './fishery/fishery.module';
 import { SalesModule } from './sales/sales.module';
+import { ExpensesModule } from './expenses/expenses.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { SalesModule } from './sales/sales.module';
     PoultryHealthModule,
     FisheryModule,
     SalesModule,
+    ExpensesModule,
     AdminModule,
   ],
 })
