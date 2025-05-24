@@ -140,7 +140,7 @@ export class UserService {
       }
 
       if (sub_type !== undefined) {
-        const validSubTypes = ['Fishery', 'Poultry', 'Animal Husbandry'];
+        const validSubTypes = ['Fishery', 'Poultry', 'Cattle Rearing', 'Apiculture'];
         const filteredSubTypes = Array.isArray(sub_type)
           ? sub_type.filter((t) => validSubTypes.includes(t))
           : [];
