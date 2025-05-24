@@ -9,6 +9,9 @@ import {
   IsOptional,
   Min,
   MaxLength,
+  IsNumber,
+  IsPositive,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateSaleDto {
@@ -39,6 +42,15 @@ export class CreateSaleDto {
   @IsInt({ each: true })
   @Min(1, { each: true })
   quantities_sold: number[];
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({ maxDecimalPlaces: 2 }, { each: true })
+  @IsPositive({ each: true })
+  @ValidateIf(
+    (o) => o.prices_per_unit !== undefined && o.prices_per_unit.length > 0,
+  )
+  prices_per_unit?: number[];
 
   @IsOptional()
   @IsString()
@@ -75,6 +87,13 @@ export class UpdateSaleDto {
   @IsInt({ each: true })
   @Min(1, { each: true })
   quantities_sold?: number[];
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({ maxDecimalPlaces: 2 }, { each: true })
+  @IsPositive({ each: true })
+  @ValidateIf((o) => o.prices_per_unit !== undefined)
+  prices_per_unit?: number[];
 
   @IsOptional()
   @IsString()

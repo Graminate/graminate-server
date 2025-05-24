@@ -12,7 +12,7 @@ export class SalesService {
   async findByUserId(userId: number): Promise<any[]> {
     try {
       const result = await pool.query(
-        'SELECT sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, quantity_unit, invoice_created, created_at FROM sales WHERE user_id = $1 ORDER BY sales_date DESC, created_at DESC, sales_id DESC', // Added sales_name
+        'SELECT sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, prices_per_unit, quantity_unit, invoice_created, created_at FROM sales WHERE user_id = $1 ORDER BY sales_date DESC, created_at DESC, sales_id DESC',
         [userId],
       );
       return result.rows;
@@ -25,7 +25,7 @@ export class SalesService {
   async findById(saleId: number): Promise<any> {
     try {
       const result = await pool.query(
-        'SELECT sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, quantity_unit, invoice_created, created_at FROM sales WHERE sales_id = $1', // Added sales_name
+        'SELECT sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, prices_per_unit, quantity_unit, invoice_created, created_at FROM sales WHERE sales_id = $1',
         [saleId],
       );
       if (result.rows.length === 0) {
@@ -46,6 +46,7 @@ export class SalesService {
       occupation,
       items_sold,
       quantities_sold,
+      prices_per_unit,
       quantity_unit,
       invoice_created = false,
     } = createDto;
@@ -55,19 +56,25 @@ export class SalesService {
         'Items sold and quantities sold arrays must have the same length.',
       );
     }
+    if (prices_per_unit && items_sold.length !== prices_per_unit.length) {
+      throw new BadRequestException(
+        'If prices per unit are provided, they must match the length of items sold.',
+      );
+    }
 
     try {
       const result = await pool.query(
-        `INSERT INTO sales (user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, quantity_unit, invoice_created)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, quantity_unit, invoice_created, created_at`, // Added sales_name
+        `INSERT INTO sales (user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, prices_per_unit, quantity_unit, invoice_created)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, prices_per_unit, quantity_unit, invoice_created, created_at`,
         [
           user_id,
-          sales_name, // Added sales_name
+          sales_name,
           sales_date,
           occupation,
           items_sold,
           quantities_sold,
+          prices_per_unit,
           quantity_unit,
           invoice_created,
         ],
@@ -75,9 +82,9 @@ export class SalesService {
       return result.rows[0];
     } catch (error) {
       console.error('Error in SalesService.create:', error);
-      if (error.constraint === 'chk_items_quantities_length') {
+      if (error.constraint === 'chk_items_quantities_prices_length') {
         throw new BadRequestException(
-          'Items sold and quantities sold arrays must have the same length (database constraint).',
+          'Items sold, quantities sold, and prices per unit arrays must have the same length (database constraint).',
         );
       }
       throw new InternalServerErrorException(error.message);
@@ -96,6 +103,7 @@ export class SalesService {
 
     let finalItemsSold = currentSale.items_sold;
     let finalQuantitiesSold = currentSale.quantities_sold;
+    let finalPricesPerUnit = currentSale.prices_per_unit;
 
     if (updateDto.sales_name !== undefined) {
       fieldsToUpdate.push(`sales_name = $${valueIndex++}`);
@@ -119,6 +127,11 @@ export class SalesService {
       values.push(updateDto.quantities_sold);
       finalQuantitiesSold = updateDto.quantities_sold;
     }
+    if (updateDto.prices_per_unit !== undefined) {
+      fieldsToUpdate.push(`prices_per_unit = $${valueIndex++}`);
+      values.push(updateDto.prices_per_unit);
+      finalPricesPerUnit = updateDto.prices_per_unit;
+    }
     if (updateDto.quantity_unit !== undefined) {
       fieldsToUpdate.push(`quantity_unit = $${valueIndex++}`);
       values.push(updateDto.quantity_unit);
@@ -133,6 +146,14 @@ export class SalesService {
         'After update, items sold and quantities sold arrays must have the same length.',
       );
     }
+    if (
+      finalPricesPerUnit &&
+      finalItemsSold.length !== finalPricesPerUnit.length
+    ) {
+      throw new BadRequestException(
+        'After update, if prices per unit are provided, they must match the length of items sold.',
+      );
+    }
 
     if (fieldsToUpdate.length === 0) {
       return currentSale;
@@ -140,7 +161,7 @@ export class SalesService {
 
     let query = 'UPDATE sales SET ';
     query += fieldsToUpdate.join(', ');
-    query += ` WHERE sales_id = $${valueIndex} RETURNING sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, quantity_unit, invoice_created, created_at`; // Added sales_name
+    query += ` WHERE sales_id = $${valueIndex} RETURNING sales_id, user_id, sales_name, sales_date, occupation, items_sold, quantities_sold, prices_per_unit, quantity_unit, invoice_created, created_at`;
     values.push(id);
 
     try {
@@ -153,9 +174,9 @@ export class SalesService {
       return result.rows[0];
     } catch (error) {
       console.error('Error in SalesService.update:', error);
-      if (error.constraint === 'chk_items_quantities_length') {
+      if (error.constraint === 'chk_items_quantities_prices_length') {
         throw new BadRequestException(
-          'Items sold and quantities sold arrays must have the same length (database constraint).',
+          'Items sold, quantities sold, and prices per unit arrays must have the same length (database constraint).',
         );
       }
       throw new InternalServerErrorException(error.message);
