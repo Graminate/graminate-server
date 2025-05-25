@@ -18,6 +18,7 @@ import { PoultryHealthModule } from './poultry-health/poultry-health.module';
 import { FisheryModule } from './fishery/fishery.module';
 import { SalesModule } from './sales/sales.module';
 import { ExpensesModule } from './expenses/expenses.module';
+import { PoultryEggsModule } from './poultry-eggs/poultry-eggs.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ExpensesModule } from './expenses/expenses.module';
     PasswordModule,
     FlockModule,
     PoultryHealthModule,
+    PoultryEggsModule,
     FisheryModule,
     SalesModule,
     ExpensesModule,
