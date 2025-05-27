@@ -47,6 +47,7 @@ export class UserService {
             city: user.city || '',
             state: user.state || '',
             postal_code: user.postal_code || '',
+            darkMode: user.darkMode,
           },
         },
       };
@@ -72,6 +73,7 @@ export class UserService {
       city,
       state,
       postal_code,
+      darkMode,
     } = body;
 
     try {
@@ -138,9 +140,18 @@ export class UserService {
         updateFields.push(`postal_code = $${values.length + 1}`);
         values.push(postal_code);
       }
+      if (darkMode !== undefined) {
+        updateFields.push(`"darkMode" = $${values.length + 1}`);
+        values.push(darkMode);
+      }
 
       if (sub_type !== undefined) {
-        const validSubTypes = ['Fishery', 'Poultry', 'Cattle Rearing', 'Apiculture'];
+        const validSubTypes = [
+          'Fishery',
+          'Poultry',
+          'Cattle Rearing',
+          'Apiculture',
+        ];
         const filteredSubTypes = Array.isArray(sub_type)
           ? sub_type.filter((t) => validSubTypes.includes(t))
           : [];
@@ -192,6 +203,7 @@ export class UserService {
         city: user.city || '',
         state: user.state || '',
         postal_code: user.postal_code || '',
+        darkMode: user.darkMode,
       },
     };
   }
@@ -232,6 +244,7 @@ export class UserService {
       city,
       state,
       postal_code,
+      darkMode,
     } = body;
 
     if (!first_name || !last_name || !email || !phone_number || !password) {
@@ -282,9 +295,9 @@ export class UserService {
         `INSERT INTO users (
           first_name, last_name, email, phone_number, 
           business_name, date_of_birth, password, type,
-          address_line_1, address_line_2, city, state, postal_code
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING user_id, first_name, last_name, email, phone_number, business_name`,
+          address_line_1, address_line_2, city, state, postal_code, "darkMode"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING user_id, first_name, last_name, email, phone_number, business_name, "darkMode"`,
         [
           first_name,
           last_name,
@@ -299,6 +312,7 @@ export class UserService {
           city || null,
           state || null,
           postal_code || null,
+          darkMode || false,
         ],
       );
 
