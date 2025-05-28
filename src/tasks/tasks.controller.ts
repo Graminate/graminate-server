@@ -62,14 +62,4 @@ export class TasksController {
   async resetInventory(@Body() resetDto: ResetTaskDto) {
     return this.tasksService.resetTable(resetDto.userId);
   }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('upcoming/:userId')
-  async getUpcomingTasks(
-    @Param('userId', ParseIntPipe) userId: number,
-    @Query('days', ParseIntPipe) days: number,
-  ) {
-    const tasks = await this.tasksService.getTasksDueSoon(userId, days);
-    return { tasks };
-  }
 }

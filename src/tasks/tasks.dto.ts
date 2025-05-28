@@ -15,22 +15,22 @@ export class CreateTaskDto {
   @IsString()
   project: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  task: string;
+  task?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
 
   @IsOptional()
   @IsString()
   description?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @IsIn(['Low', 'Medium', 'High'])
-  priority: string;
+  priority?: string;
 
   @IsOptional()
   @IsDateString()

@@ -19,14 +19,19 @@ export class TasksService {
     const values = [
       dto.user_id,
       dto.project,
-      dto.task,
-      dto.status,
+      dto.task || null,
+      dto.status || null,
       dto.description || null,
-      dto.priority,
+      dto.priority || null,
       dto.deadline || null,
     ];
-    const { rows } = await pool.query(query, values);
-    return rows[0];
+    try {
+      const { rows } = await pool.query(query, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Error creating task entry:', error);
+      throw new InternalServerErrorException('Failed to create task entry');
+    }
   }
 
   async getTasksByUser(
@@ -69,7 +74,7 @@ export class TasksService {
     Object.entries(dto).forEach(([key, value]) => {
       if (value !== undefined) {
         fields.push(`${key} = $${fields.length + 2}`);
-        values.push(value);
+        values.push(value === '' ? null : value);
       }
     });
 
@@ -110,27 +115,6 @@ export class TasksService {
       return { message: `Tasks table reset for user ${userId}` };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  async getTasksDueSoon(userId: number, days: number) {
-    const targetDate = new Date();
-    targetDate.setUTCDate(targetDate.getUTCDate() + days); // Work with UTC dates
-    const targetDateString = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD in UTC
-
-    const query = `
-    SELECT * FROM tasks
-    WHERE user_id = $1
-    AND (deadline AT TIME ZONE 'UTC')::date = $2 
-  `;
-    const params = [userId, targetDateString];
-
-    try {
-      const { rows } = await pool.query(query, params);
-      return rows;
-    } catch (error) {
-      console.error('Database error:', error);
-      throw new InternalServerErrorException('Failed to fetch upcoming tasks');
     }
   }
 }
