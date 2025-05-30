@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateInventoryDto {
@@ -42,6 +43,10 @@ export class CreateInventoryDto {
   @IsInt()
   @Min(0)
   minimum_limit?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  feed?: boolean;
 }
 
 export class UpdateInventoryDto {
@@ -74,6 +79,10 @@ export class UpdateInventoryDto {
   @IsInt()
   @Min(0)
   minimum_limit?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  feed?: boolean;
 }
 
 export class ResetInventoryDto {

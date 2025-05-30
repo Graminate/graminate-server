@@ -1,4 +1,3 @@
-// inventory.controller.ts
 import {
   Controller,
   Get,
@@ -14,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import {
-  CreateInventoryDto, // Ensure this is imported
+  CreateInventoryDto,
   UpdateInventoryDto,
   ResetInventoryDto,
 } from './inventory.dto';
@@ -24,7 +23,6 @@ import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
-  // GET: http://localhost:3001/api/inventory/:userId?limit=&offset=&item_group=&warehouse_id=
   @UseGuards(JwtAuthGuard)
   @Get(':userId')
   async getInventory(
@@ -46,16 +44,13 @@ export class InventoryController {
     return { items };
   }
 
-  // POST: http://localhost:3001/api/inventory/add
   @UseGuards(JwtAuthGuard)
   @Post('add')
   async addInventory(@Body() createDto: CreateInventoryDto) {
-    // Use CreateInventoryDto
     const newItem = await this.inventoryService.create(createDto);
     return newItem;
   }
 
-  // PUT: http://localhost:3001/api/inventory/update/:id
   @UseGuards(JwtAuthGuard)
   @Put('update/:id')
   async updateInventory(
@@ -72,7 +67,6 @@ export class InventoryController {
     return updatedItem;
   }
 
-  // DELETE: http://localhost:3001/api/inventory/delete/:id
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
   async deleteInventory(@Param('id') id: string) {
@@ -83,11 +77,9 @@ export class InventoryController {
     return { message: 'Deleted successfully' };
   }
 
-  // POST: http://localhost:3001/api/inventory/reset
   @UseGuards(JwtAuthGuard)
   @Post('reset')
   async resetInventory(@Body() resetDto: ResetInventoryDto) {
-    // Consider the scope of resetTable as mentioned in the service.
     return this.inventoryService.resetTable(resetDto.userId);
   }
 }

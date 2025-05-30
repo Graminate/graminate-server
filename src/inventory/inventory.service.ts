@@ -72,11 +72,12 @@ export class InventoryService {
       price_per_unit,
       warehouse_id,
       minimum_limit,
+      feed,
     } = createDto;
     try {
       const result = await pool.query(
-        `INSERT INTO inventory (user_id, item_name, item_group, units, quantity, price_per_unit, warehouse_id, minimum_limit)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        `INSERT INTO inventory (user_id, item_name, item_group, units, quantity, price_per_unit, warehouse_id, minimum_limit, feed)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [
           user_id,
           item_name,
@@ -86,6 +87,7 @@ export class InventoryService {
           price_per_unit,
           warehouse_id,
           minimum_limit,
+          feed,
         ],
       );
       return result.rows[0];
@@ -102,6 +104,7 @@ export class InventoryService {
       quantity,
       price_per_unit,
       minimum_limit,
+      feed,
     } = updateDto;
     try {
       const result = await pool.query(
@@ -111,8 +114,9 @@ export class InventoryService {
             units = COALESCE($3, units),
             quantity = COALESCE($4, quantity),
             price_per_unit = COALESCE($5, price_per_unit),
-            minimum_limit = COALESCE($6, minimum_limit)
-         WHERE inventory_id = $7 RETURNING *`,
+            minimum_limit = COALESCE($6, minimum_limit),
+            feed = COALESCE($7, feed)
+         WHERE inventory_id = $8 RETURNING *`,
         [
           item_name,
           item_group,
@@ -120,6 +124,7 @@ export class InventoryService {
           quantity,
           price_per_unit,
           minimum_limit,
+          feed,
           id,
         ],
       );
