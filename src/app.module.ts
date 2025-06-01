@@ -20,6 +20,7 @@ import { SalesModule } from './sales/sales.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { PoultryEggsModule } from './poultry-eggs/poultry-eggs.module';
 import { PoultryFeedsModule } from './poultry-feeds/poultry-feeds.module';
+import { CattleRearingModule } from './cattle-rearing/cattle-rearing.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PoultryFeedsModule } from './poultry-feeds/poultry-feeds.module';
     PoultryEggsModule,
     PoultryFeedsModule,
     FisheryModule,
+    CattleRearingModule,
     SalesModule,
     ExpensesModule,
     AdminModule,
