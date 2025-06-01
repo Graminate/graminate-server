@@ -83,7 +83,7 @@ export class CattleRearingController {
 
   @UseGuards(JwtAuthGuard)
   @Post('reset')
-  async reset(@Body('userId', ParseIntPipe) userId: number) {
+  async reset(@Body('userId') userId: number) {
     return this.cattleRearingService.resetTable(userId);
   }
 }

@@ -111,7 +111,7 @@ export class CattleRearingService {
   async resetTable(userId: number): Promise<{ message: string }> {
     try {
       await pool.query('TRUNCATE cattle_rearing RESTART IDENTITY CASCADE');
-      return { message: `Cattle rearing table reset for user ${userId}` };
+      return { message: `Cattle table reset for user ${userId}` };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
