@@ -14,7 +14,11 @@ import {
 
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { CattleMilkService } from './cattle-milk.service';
-import { CreateCattleMilkDto, UpdateCattleMilkDto } from './cattle-milk.dto';
+import {
+  CreateCattleMilkDto,
+  ResetCattleMilkDto,
+  UpdateCattleMilkDto,
+} from './cattle-milk.dto';
 
 @Controller('api/cattle-milk')
 export class CattleMilkController {
@@ -83,8 +87,18 @@ export class CattleMilkController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('animal-names/:cattleId')
+  async getAnimalNamesForHerd(
+    @Param('cattleId', ParseIntPipe) cattleId: number,
+  ) {
+    const names =
+      await this.cattleMilkService.findAnimalNamesByCattleId(cattleId);
+    return { animalNames: names };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('reset')
-  async resetUserRecords(@Body('userId', ParseIntPipe) userId: number) {
-    return this.cattleMilkService.resetRecordsByUserId(userId);
+  async resetWarehouse(@Body() resetDto: ResetCattleMilkDto) {
+    return this.cattleMilkService.resetTable(resetDto.userId);
   }
 }

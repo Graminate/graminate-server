@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import pool from '@/config/database';
 import { CreateCattleMilkDto, UpdateCattleMilkDto } from './cattle-milk.dto';
 
@@ -118,20 +114,29 @@ export class CattleMilkService {
     }
   }
 
-  async resetRecordsByUserId(
-    userId: number,
-  ): Promise<{ message: string; count: number }> {
+  async findAnimalNamesByCattleId(cattleId: number): Promise<string[]> {
     try {
       const result = await pool.query(
-        'DELETE FROM cattle_milk WHERE user_id = $1',
-        [userId],
+        `SELECT DISTINCT animal_name FROM cattle_milk 
+         WHERE cattle_id = $1 AND animal_name IS NOT NULL AND animal_name <> '' 
+         ORDER BY animal_name ASC`,
+        [cattleId],
       );
-      return {
-        message: `Cattle milk records reset for user ${userId}`,
-        count: result.rowCount,
-      };
+      return result.rows.map((row) => row.animal_name);
     } catch (error) {
-      console.error('Error in CattleMilkService.resetRecordsByUserId:', error);
+      console.error(
+        'Error in CattleMilkService.findAnimalNamesByCattleId:',
+        error,
+      );
+      throw new InternalServerErrorException('Could not fetch animal names.');
+    }
+  }
+
+  async resetTable(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('TRUNCATE cattle_milk RESTART IDENTITY CASCADE');
+      return { message: `Cattle milk table reset for user ${userId}` };
+    } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
   }
