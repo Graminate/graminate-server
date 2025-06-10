@@ -22,6 +22,8 @@ import { PoultryEggsModule } from './poultry-eggs/poultry-eggs.module';
 import { PoultryFeedsModule } from './poultry-feeds/poultry-feeds.module';
 import { CattleRearingModule } from './cattle-rearing/cattle-rearing.module';
 import { CattleMilkModule } from './cattle-milk/cattle-milk.module';
+import { ApicultureModule } from './apiculture/apiculture.module';
+import { BeeHivesModule } from './bee-hives/bee-hives.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { CattleMilkModule } from './cattle-milk/cattle-milk.module';
     FisheryModule,
     CattleRearingModule,
     CattleMilkModule,
+    ApicultureModule,
+    BeeHivesModule,
     SalesModule,
     ExpensesModule,
     AdminModule,
