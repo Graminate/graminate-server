@@ -37,6 +37,7 @@ export class BeeHivesService {
       apiary_id,
       hive_name,
       hive_type,
+      bee_species,
       installation_date,
       queen_status,
       queen_introduced_date,
@@ -51,12 +52,13 @@ export class BeeHivesService {
     } = createDto;
     try {
       const result = await pool.query(
-        `INSERT INTO bee_hives (apiary_id, hive_name, hive_type, installation_date, queen_status, queen_introduced_date, last_inspection_date, brood_pattern, honey_stores_kg, pest_infestation, disease_detected, swarm_risk, ventilation_status, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+        `INSERT INTO bee_hives (apiary_id, hive_name, hive_type, bee_species, installation_date, queen_status, queen_introduced_date, last_inspection_date, brood_pattern, honey_stores_kg, pest_infestation, disease_detected, swarm_risk, ventilation_status, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
         [
           apiary_id,
           hive_name,
           hive_type,
+          bee_species,
           installation_date,
           queen_status,
           queen_introduced_date,

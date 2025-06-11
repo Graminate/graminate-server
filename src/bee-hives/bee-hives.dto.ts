@@ -17,6 +17,7 @@ export class CreateHiveDto {
   hive_name: string;
 
   @IsOptional() @IsString() hive_type?: string;
+  @IsOptional() @IsString() bee_species?: string;
   @IsOptional() @IsDateString() installation_date?: Date | string;
   @IsOptional() @IsString() queen_status?: string;
   @IsOptional() @IsDateString() queen_introduced_date?: Date | string;
@@ -33,6 +34,7 @@ export class CreateHiveDto {
 export class UpdateHiveDto {
   @IsOptional() @IsString() @IsNotEmpty() hive_name?: string;
   @IsOptional() @IsString() hive_type?: string;
+  @IsOptional() @IsString() bee_species?: string;
   @IsOptional() @IsDateString() installation_date?: Date | string;
   @IsOptional() @IsString() queen_status?: string;
   @IsOptional() @IsDateString() queen_introduced_date?: Date | string;
