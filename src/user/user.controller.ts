@@ -32,6 +32,13 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get(':id/available-sub-types')
+  async getAvailableSubTypes(@Param('id') id: string, @Request() req) {
+    if (String(req.user.userId) !== id) throw new UnauthorizedException();
+    return this.userService.getAvailableSubTypes(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async getUser(@Param('id') id: string, @Request() req) {
     if (String(req.user.userId) !== id) throw new UnauthorizedException();

@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import pool from '@/config/database';
 import * as argon2 from 'argon2';
 
+const subTypeMapping = {
+  Producer: ['Fishery', 'Poultry', 'Cattle Rearing', 'Apiculture'],
+};
+
 @Injectable()
 export class UserService {
   getAllUsersMinimal() {
@@ -11,6 +15,29 @@ export class UserService {
     throw new Error('Method not implemented.');
   }
   jwtService: any;
+
+  async getAvailableSubTypes(userId: string) {
+    try {
+      const userResult = await pool.query(
+        'SELECT type FROM users WHERE user_id = $1',
+        [userId],
+      );
+      if (userResult.rows.length === 0) {
+        return { status: 404, data: { error: 'User not found' } };
+      }
+
+      const userType = userResult.rows[0].type;
+      const availableSubTypes = subTypeMapping[userType] || [];
+
+      return { status: 200, data: { subTypes: availableSubTypes } };
+    } catch (err) {
+      console.error('Error fetching available sub-types:', err);
+      return {
+        status: 500,
+        data: { error: 'Failed to fetch available sub-types' },
+      };
+    }
+  }
 
   async getUserById(id: string) {
     try {
@@ -262,7 +289,6 @@ export class UserService {
     try {
       await client.query('BEGIN');
 
-      // Check for existing user
       const existing = await client.query(
         'SELECT 1 FROM users WHERE email = $1 OR phone_number = $2 FOR UPDATE',
         [email, phone_number],
@@ -281,7 +307,6 @@ export class UserService {
         };
       }
 
-      // Hash password
       const hashedPassword = await argon2.hash(password, {
         type: argon2.argon2id,
         hashLength: 16,
@@ -290,7 +315,6 @@ export class UserService {
         parallelism: 1,
       });
 
-      // Insert new user
       const result = await client.query(
         `INSERT INTO users (
           first_name, last_name, email, phone_number, 
