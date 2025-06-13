@@ -68,8 +68,12 @@ export class UpdateExpenseDto {
   date_created?: string;
 }
 
-export class ResetExpensesDto {
+export class DeleteExpensesByOccupationDto {
   @IsNotEmpty()
   @IsInt()
   userId: number;
+
+  @IsNotEmpty()
+  @IsString()
+  occupation: string;
 }

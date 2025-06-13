@@ -113,10 +113,19 @@ export class FisheryService {
     }
   }
 
-  async resetTable(userId: number): Promise<{ message: string }> {
+  async resetTable(): Promise<{ message: string }> {
     try {
       await pool.query('TRUNCATE fishery RESTART IDENTITY CASCADE');
-      return { message: `Fishery table reset for user ${userId}` };
+      return { message: `Fishery table has been completely reset.` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  async resetForUser(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('DELETE FROM fishery WHERE user_id = $1', [userId]);
+      return { message: `Fishery data reset for user ${userId}` };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }

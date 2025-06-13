@@ -16,7 +16,12 @@ import {
 
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { SalesService } from './sales.service';
-import { CreateSaleDto, UpdateSaleDto, ResetSalesDto } from './sales.dto';
+import {
+  CreateSaleDto,
+  UpdateSaleDto,
+  DeleteSalesByOccupationDto,
+  ResetSalesDto,
+} from './sales.dto';
 
 @Controller('api/sales')
 export class SalesController {
@@ -96,5 +101,16 @@ export class SalesController {
   @Post('reset')
   async resetInventory(@Body() resetDto: ResetSalesDto) {
     return this.salesService.resetTable(resetDto.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('delete-by-occupation')
+  async deleteByOccupation(
+    @Body(new ValidationPipe()) deleteDto: DeleteSalesByOccupationDto,
+  ) {
+    return this.salesService.deleteByOccupationAndUser(
+      deleteDto.userId,
+      deleteDto.occupation,
+    );
   }
 }

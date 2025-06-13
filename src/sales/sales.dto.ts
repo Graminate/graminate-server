@@ -109,3 +109,13 @@ export class ResetSalesDto {
   @IsInt()
   userId: number;
 }
+
+export class DeleteSalesByOccupationDto {
+  @IsNotEmpty()
+  @IsInt()
+  userId: number;
+
+  @IsNotEmpty()
+  @IsString()
+  occupation: string;
+}

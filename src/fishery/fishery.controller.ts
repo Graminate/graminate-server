@@ -74,8 +74,14 @@ export class FisheryController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('reset-service')
+  async resetService(@Body() resetDto: ResetFisheryDto) {
+    return this.fisheryService.resetForUser(resetDto.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('reset')
-  async reset(@Body() resetDto: ResetFisheryDto) {
-    return this.fisheryService.resetTable(resetDto.userId);
+  async reset() {
+    return this.fisheryService.resetTable();
   }
 }

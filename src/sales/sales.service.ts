@@ -203,4 +203,23 @@ export class SalesService {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+  async deleteByOccupationAndUser(
+    userId: number,
+    occupation: string,
+  ): Promise<{ message: string; deletedCount: number }> {
+    try {
+      const result = await pool.query(
+        'DELETE FROM sales WHERE user_id = $1 AND occupation = $2',
+        [userId, occupation],
+      );
+      return {
+        message: `Sales for user ${userId} with occupation '${occupation}' deleted.`,
+        deletedCount: result.rowCount,
+      };
+    } catch (error) {
+      console.error('Error in SalesService.deleteByOccupationAndUser:', error);
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }

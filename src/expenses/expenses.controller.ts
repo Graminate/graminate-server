@@ -19,7 +19,7 @@ import { ExpensesService } from './expenses.service';
 import {
   CreateExpenseDto,
   UpdateExpenseDto,
-  ResetExpensesDto,
+  DeleteExpensesByOccupationDto,
 } from './expenses.dto';
 
 @Controller('api/expenses')
@@ -100,5 +100,16 @@ export class ExpensesController {
   @Post('reset')
   async reset(@Body('userId') userId: number) {
     return this.expensesService.resetTable(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('delete-by-occupation')
+  async deleteByOccupation(
+    @Body(new ValidationPipe()) deleteDto: DeleteExpensesByOccupationDto,
+  ) {
+    return this.expensesService.deleteByOccupationAndUser(
+      deleteDto.userId,
+      deleteDto.occupation,
+    );
   }
 }
