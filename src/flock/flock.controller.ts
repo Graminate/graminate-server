@@ -74,8 +74,14 @@ export class FlockController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('reset-service')
+  async resetService(@Body() resetDto: ResetFlockDto) {
+    return this.flockService.resetForUser(resetDto.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('reset')
-  async reset(@Body('userId') userId: number) {
-    return this.flockService.resetTable(userId);
+  async reset() {
+    return this.flockService.resetTable();
   }
 }

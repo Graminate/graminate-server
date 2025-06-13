@@ -108,10 +108,21 @@ export class CattleRearingService {
     }
   }
 
-  async resetTable(userId: number): Promise<{ message: string }> {
+  async resetForUser(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('DELETE FROM cattle_rearing WHERE user_id = $1', [
+        userId,
+      ]);
+      return { message: `Cattle Rearing data reset for user ${userId}` };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  async resetTable(): Promise<{ message: string }> {
     try {
       await pool.query('TRUNCATE cattle_rearing RESTART IDENTITY CASCADE');
-      return { message: `Cattle table reset for user ${userId}` };
+      return { message: 'Cattle Rearing table has been completely reset.' };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }

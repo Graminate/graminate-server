@@ -17,6 +17,7 @@ import { CattleRearingService } from './cattle-rearing.service';
 import {
   CreateCattleRearingDto,
   UpdateCattleRearingDto,
+  ResetCattleRearingDto,
 } from './cattle-rearing.dto';
 
 @Controller('api/cattle-rearing')
@@ -82,8 +83,14 @@ export class CattleRearingController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('reset-service')
+  async resetService(@Body() resetDto: ResetCattleRearingDto) {
+    return this.cattleRearingService.resetForUser(resetDto.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('reset')
-  async reset(@Body('userId') userId: number) {
-    return this.cattleRearingService.resetTable(userId);
+  async reset() {
+    return this.cattleRearingService.resetTable();
   }
 }

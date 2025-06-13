@@ -14,7 +14,11 @@ import {
 
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { ApicultureService } from './apiculture.service';
-import { CreateApiaryDto, UpdateApiaryDto } from './apiculture.dto';
+import {
+  CreateApiaryDto,
+  UpdateApiaryDto,
+  ResetApicultureDto,
+} from './apiculture.dto';
 
 @Controller('api/apiculture')
 export class ApicultureController {
@@ -70,8 +74,14 @@ export class ApicultureController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('reset-service')
+  async resetService(@Body() resetDto: ResetApicultureDto) {
+    return this.apicultureService.resetForUser(resetDto.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('reset')
-  async reset(@Body('userId') userId: number) {
-    return this.apicultureService.resetTable(userId);
+  async reset() {
+    return this.apicultureService.resetTable();
   }
 }

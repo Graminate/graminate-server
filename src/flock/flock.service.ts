@@ -142,10 +142,21 @@ export class FlockService {
     }
   }
 
-  async resetTable(userId: number): Promise<{ message: string }> {
+  async resetTable(): Promise<{ message: string }> {
     try {
       await pool.query('TRUNCATE poultry_flock RESTART IDENTITY CASCADE');
-      return { message: `Flock table reset for user ${userId}` };
+      return { message: 'Poultry flock table has been completely reset.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+  
+  async resetForUser(userId: number): Promise<{ message: string }> {
+    try {
+      await pool.query('DELETE FROM poultry_flock WHERE user_id = $1', [
+        userId,
+      ]);
+      return { message: `Poultry flock data reset for user ${userId}` };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
